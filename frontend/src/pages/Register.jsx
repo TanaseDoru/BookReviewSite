@@ -1,7 +1,8 @@
 // src/pages/Register.jsx
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { register, login } from '../utils/api';
+import { AuthContext } from "../context/AuthContext";
 import Button from '../components/shared/Button';
 
 const Register = () => {
@@ -11,30 +12,28 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { setUser } = useContext(AuthContext);
 
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleRegister = async () => {
-    setError('');
-
-    if (!firstName || !lastName || !email || !password) {
-      setError('Toate câmpurile sunt obligatorii.');
-      return;
-    }
-
-    if (!isValidEmail(email)) {
-      setError('Introduceți un email valid.');
-      return;
-    }
-
     try {
       await register(firstName, lastName, email, password);
       const loginData = await login(email, password);
-      localStorage.setItem('token', loginData.token);
-      navigate('/');
-      window.location.reload();
+      localStorage.setItem("token", loginData.token);
+
+      // Setăm user-ul în context
+      setUser({
+        firstName: loginData.firstName,
+        lastName: loginData.lastName,
+        email: loginData.email,
+        profilePicture: loginData.profilePicture,
+      });
+
+      alert(`Cont creat cu succes! Bine ai venit, ${loginData.firstName}!`);
+      navigate("/");
     } catch (error) {
-      setError(error.message || 'Eroare la înregistrare');
+      setError(error.message || "Eroare la înregistrare");
     }
   };
 

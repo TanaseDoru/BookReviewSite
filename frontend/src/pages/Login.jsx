@@ -1,7 +1,8 @@
 // src/pages/Login.jsx
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../utils/api';
+import { AuthContext } from "../context/AuthContext";
 import Button from '../components/shared/Button';
 
 const Login = () => {
@@ -11,19 +12,27 @@ const Login = () => {
   const [forgotPassword, setForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const navigate = useNavigate();
+  const { setUser } = useContext(AuthContext);
 
   const handleLogin = async () => {
     try {
       const data = await login(email, password);
-      localStorage.setItem('token', data.token);
-      alert(`Bine ai venit, ${data.firstName}!`);
-      // console.log('Inainte');
-      navigate('/');
-      // console.log('Dupa');
+      localStorage.setItem("token", data.token);
 
-      window.location.reload();
+      console.log('Token From Hadnle lOgin: ' + data.token);
+
+      // Actualizăm user-ul în context
+      setUser({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        profilePicture: data.profilePicture
+      });
+
+      alert(`Bine ai venit, ${data.firstName}!`);
+      navigate("/");
     } catch (error) {
-      setError(error.message || 'Email sau parolă incorectă');
+      setError(error.message || "Email sau parolă incorectă");
     }
   };
 

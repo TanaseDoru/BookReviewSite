@@ -17,6 +17,7 @@ app.use('/api/books', require('./routes/books'));
 app.use('/api/authors', require('./routes/authors'));
 app.use('/api/user-books', require('./routes/userBooks'));
 app.use('/api/profile', require('./routes/profile'));
+app.use("/api/reviews", require("./routes/reviews")); // Mount reviews routes
 
 // Start server
 const startServer = async () => {

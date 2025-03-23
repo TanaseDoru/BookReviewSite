@@ -1,12 +1,13 @@
 // src/utils/api.js
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = "http://localhost:3000/api";
 
-const apiRequest = async (endpoint, method = 'GET', body = null, token = null) => {
+const apiRequest = async (endpoint, method = "GET", body = null, token = null) => {
   const headers = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
   if (token) {
     headers.Authorization = `Bearer ${token}`;
+    console.log("Sending token:", token); // Debug log
   }
 
   const config = {
@@ -16,18 +17,20 @@ const apiRequest = async (endpoint, method = 'GET', body = null, token = null) =
 
   if (body) {
     if (body instanceof FormData) {
-      delete headers['Content-Type']; // Let the browser set the correct boundary for FormData
+      delete headers["Content-Type"];
       config.body = body;
     } else {
       config.body = JSON.stringify(body);
     }
   }
 
+  console.log("Making request to:", `${API_BASE_URL}${endpoint}`); // Debug log
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || 'Request failed');
+    console.log("Request failed with response:", data); // Debug log
+    throw new Error(data.message || "Request failed");
   }
 
   return data;
@@ -73,3 +76,12 @@ export const uploadProfilePicture = (file, token) => {
   formData.append('profilePicture', file);
   return apiRequest('/profile/upload-picture', 'POST', formData, token);
 };
+
+export const fetchBookReviews = (bookId) =>
+  apiRequest(`/reviews/book/${bookId}`, 'GET');
+
+export const fetchUserReviewForBook = (bookId, token) =>
+  apiRequest(`/reviews/user/book/${bookId}`, "GET", null, token);
+
+export const saveReview = (bookId, reviewData, token) =>
+  apiRequest(`/reviews/book/${bookId}`, "POST", reviewData, token);

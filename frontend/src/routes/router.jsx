@@ -9,6 +9,7 @@ import MyBooks from '../pages/MyBooks';
 import Profile from '../pages/Profile';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
+import EditReview from "../pages/EditReview"; // Import EditRev
 
 export const router = createBrowserRouter([
   {
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
       { path: '/profile', element: <Profile /> },
       { path: '/login', element: <Login /> },
       { path: '/register', element: <Register /> },
+      { path: "/editReview/:bookId", element: <EditReview /> },
     ],
   },
 ]);
