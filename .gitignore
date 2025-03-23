@@ -1,0 +1,3 @@
+**/node_modules/
+/frontent/build
+/backend/.env
