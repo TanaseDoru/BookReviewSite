@@ -3,6 +3,8 @@ import { useContext, useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import Button from '../shared/Button';
+import blankProfile from '../../assets/blankProfile.png';
+
 
 const navLinks = [
   { name: 'Home', route: '/' },
@@ -52,7 +54,7 @@ const NavBar = () => {
   };
 
   return (
-    <nav className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white shadow-lg">
+    <nav className="navbar bg-gradient-to-r from-blue-900 to-indigo-900 text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-4">
           {/* Logo */}
@@ -83,7 +85,7 @@ const NavBar = () => {
             {user ? (
               <>
                 <img
-                  src={`data:image/png;base64,${user.profilePicture}` || '/assets/blankProfile.png'}
+                  src={user.profilePicture != "" ? `data:image/png;base64,${user.profilePicture}` : blankProfile}
                   alt="Profile"
                   className="w-10 h-10 rounded-full cursor-pointer border-2 border-blue-300 hover:border-blue-500 transition"
                   onClick={() => navigate('/profile')}
@@ -133,7 +135,7 @@ const NavBar = () => {
             {user ? (
               <div className="flex flex-col items-center">
                 <img
-                  src={user.profilePicture || '/assets/blankProfile.png'}
+                  src={user.profilePicture != "" ? `data:image/png;base64,${user.profilePicture}` : blankProfile}
                   alt="Profile"
                   className="w-12 h-12 rounded-full cursor-pointer border-2 border-blue-300"
                   onClick={() => {

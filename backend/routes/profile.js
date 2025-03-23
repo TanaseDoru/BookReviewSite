@@ -72,24 +72,30 @@ router.put('/update-name', authMiddleware, async (req, res) => {
   }
 });
 
-// Update password
 router.put('/update-password', authMiddleware, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.userId;
+
   try {
-    const { newPassword } = req.body;
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    const result = await User.updateOne(
-      { _id: req.user.userId },
-      { $set: { password: hashedPassword } }
-    );
-
-    if (result.modifiedCount === 0) {
-      return res.status(404).json({ message: 'User not found or no changes made' });
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Utilizatorul nu a fost găsit' });
     }
 
-    res.json({ message: 'Password updated successfully' });
-  } catch (error) {
-    errorHandler(res, error, 'Error updating password');
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    user.password = hashedPassword;
+    await user.save();
+
+    res.json({ message: 'Parola a fost actualizată cu succes' });
+  } catch (err) {
+    console.error('Eroare la actualizarea parolei:', err);
+    res.status(500).json({ message: 'Eroare server' });
   }
 });
 

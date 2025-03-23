@@ -49,26 +49,64 @@ router.post('/add', authMiddleware, async (req, res) => {
   }
 });
 
-// Update book status or rating
 router.patch('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, rating } = req.body;
+    const { status } = req.body;
 
-    const userBook = await UserBook.findOne({ _id: id, userId: req.user.userId });
-    if (!userBook) {
-      return res.status(404).json({ message: 'Book not found' });
+    // Verifică dacă id-ul este valid
+    if (!id || id === "undefined") {
+      return res.status(400).json({ message: "Invalid book ID" });
     }
 
-    if (status) userBook.status = status;
-    if (rating) userBook.rating = rating;
-    if (status === 'Citit' && !userBook.dateRead) userBook.dateRead = new Date();
+    const userBook = await UserBook.findOneAndUpdate(
+      { _id: id, userId: req.user.userId },
+      { $set: { status } },
+      { new: true }
+    );
+
+    if (!userBook) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    if (status === "Citit" && !userBook.dateRead) {
+      userBook.dateRead = new Date();
+    }
 
     await userBook.save();
     res.json(userBook);
   } catch (error) {
-    errorHandler(res, error, 'Error updating book');
+    errorHandler(res, error, "Error updating book");
   }
 });
+
+router.post('/add', authMiddleware, async (req, res) => {
+  try {
+    const { bookId, status } = req.body;
+
+    if (!bookId || !status) {
+      return res.status(400).json({ message: 'Book ID and status are required' });
+    }
+
+    const bookExists = await Book.findById(bookId);
+    if (!bookExists) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    const userBook = new UserBook({
+      userId: req.user.userId,
+      bookId,
+      status,
+      dateAdded: new Date(),
+    });
+
+    await userBook.save();
+    const populatedUserBook = await UserBook.findById(userBook._id).populate('bookId').lean();
+    res.status(201).json(populatedUserBook);
+  } catch (error) {
+    errorHandler(res, error, 'Error adding book');
+  }
+});
+
 
 module.exports = router;

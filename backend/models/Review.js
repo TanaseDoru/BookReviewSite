@@ -11,6 +11,7 @@ const reviewSchema = new mongoose.Schema({
   endDate: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
+  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Array of user IDs who liked the review
 });
 
 module.exports = mongoose.model("Review", reviewSchema);

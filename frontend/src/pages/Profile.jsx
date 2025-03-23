@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchUserProfile, updateProfileName, updateProfilePassword, uploadProfilePicture } from '../utils/api';
 import Button from '../components/shared/Button';
+import blankProfile from '../assets/blankProfile.png';
 
 const Profile = () => {
   const [user, setUser] = useState({
@@ -15,6 +16,7 @@ const Profile = () => {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [currentPassword, setCurrnetPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -67,21 +69,26 @@ const Profile = () => {
 
   const handlePasswordChange = async () => {
     if (newPassword !== confirmPassword) {
-      setError('New passwords do not match.');
+      setError('Parolele noi nu se potrivesc.');
       return;
     }
-
+  
     try {
       const token = localStorage.getItem('token');
-      await updateProfilePassword(newPassword, token);
-      alert('Password updated successfully!');
+      await updateProfilePassword(currentPassword, newPassword, token);
+      alert('Parola a fost actualizată cu succes!');
       setShowChangePassword(false);
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setError('');
     } catch (error) {
-      console.error('Error updating password:', error);
-      setError(error.message || 'Failed to update password.');
+      console.error('Eroare la actualizarea parolei:', error);
+      if (error.message === 'Current password is incorrect') {
+        setError('Parola curentă este incorectă.');
+      } else {
+        setError(error.message || 'Actualizarea parolei a eșuat.');
+      }
     }
   };
 
@@ -91,7 +98,7 @@ const Profile = () => {
       <div className="w-1/4 p-6 border-r border-gray-700">
         <div className="flex flex-col items-center">
           <img
-            src={`data:image/png;base64,${user.profilePicture}` || '../assets/blankProfile.png'}
+            src={user.profilePicture ? `data:image/png;base64,${user.profilePicture}` : blankProfile}
             alt="Profile"
             className="w-32 h-32 rounded-full shadow-lg mb-4"
           />
@@ -193,6 +200,16 @@ const Profile = () => {
                 </Button>
               ) : (
                 <div className="space-y-4">
+                  <div>
+                    <label className="block mb-1 text-gray-300">Current Password</label>
+                    <input
+                      type="password"
+                      placeholder="Enter current Password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrnetPassword(e.target.value)}
+                      className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                   <div>
                     <label className="block mb-1 text-gray-300">New Password</label>
                     <input

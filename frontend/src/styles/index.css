@@ -44,6 +44,15 @@ h1 {
   line-height: 1.1;
 }
 
+.navbar {
+  position: sticky; /* Folosește sticky în loc de fixed */
+  top: 0; /* Fixează NavBar-ul în partea de sus */
+  z-index: 1000; /* Asigură-te că NavBar-ul este deasupra altor elemente */
+  background: linear-gradient(to right, #1e3a8a, #4c1d95); /* Păstrează gradientul */
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Opțional: umbră pentru estetică */
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #1f2937;

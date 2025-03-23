@@ -233,9 +233,9 @@ const MyBooks = () => {
                     "No cover"
                   )}
                 </td>
-                <td className="p-4">{book.bookId.title}</td>
+                <td className="p-4" onClick={() => navigate(`/book/${book._id}`)}>{book.bookId.title}</td>
                 <td className="p-4">{book.bookId.author}</td>
-                <td className="p-4">{book.bookId.avgRating || "—"}</td>
+                <td className="p-4">{book.bookId.avgRating.toFixed(2) || "—"}</td>
                 <td className="p-4 flex gap-2 items-center">
                   <button
                     className="buttonStyle bg-blue-500 hover:bg-blue-600 text-sm"

@@ -7,33 +7,28 @@ const apiRequest = async (endpoint, method = "GET", body = null, token = null) =
   };
   if (token) {
     headers.Authorization = `Bearer ${token}`;
-    console.log("Sending token:", token); // Debug log
   }
 
   const config = {
     method,
     headers,
+    body: body ? JSON.stringify(body) : null,
   };
 
-  if (body) {
-    if (body instanceof FormData) {
-      delete headers["Content-Type"];
-      config.body = body;
-    } else {
-      config.body = JSON.stringify(body);
-    }
-  }
-
-  console.log("Making request to:", `${API_BASE_URL}${endpoint}`); // Debug log
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-  const data = await response.json();
 
-  if (!response.ok) {
-    console.log("Request failed with response:", data); // Debug log
-    throw new Error(data.message || "Request failed");
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "Request failed");
+    }
+    return data;
+  } else {
+    const text = await response.text();
+    console.error("Răspuns non-JSON:", text);
+    throw new Error("Serverul a returnat un răspuns invalid");
   }
-
-  return data;
 };
 
 export const login = (email, password) =>
@@ -68,8 +63,8 @@ export const updateUserBook = (bookId, updates, token) =>
 export const updateProfileName = (firstName, lastName, token) =>
   apiRequest('/profile/update-name', 'PUT', { firstName, lastName }, token);
 
-export const updateProfilePassword = (newPassword, token) =>
-  apiRequest('/profile/update-password', 'PUT', { newPassword }, token);
+export const updateProfilePassword = (currentPassword, newPassword, token) =>
+  apiRequest('/profile/update-password', 'PUT', { currentPassword, newPassword }, token);
 
 export const uploadProfilePicture = (file, token) => {
   const formData = new FormData();
@@ -77,11 +72,18 @@ export const uploadProfilePicture = (file, token) => {
   return apiRequest('/profile/upload-picture', 'POST', formData, token);
 };
 
-export const fetchBookReviews = (bookId) =>
-  apiRequest(`/reviews/book/${bookId}`, 'GET');
 
 export const fetchUserReviewForBook = (bookId, token) =>
   apiRequest(`/reviews/user/book/${bookId}`, "GET", null, token);
 
 export const saveReview = (bookId, reviewData, token) =>
   apiRequest(`/reviews/book/${bookId}`, "POST", reviewData, token);
+
+export const fetchBookReviews = (bookId, page = 1, limit = 8, rating = null) => {
+  const query = new URLSearchParams({ page, limit });
+  if (rating) query.append("rating", rating);
+  return apiRequest(`/reviews/book/${bookId}?${query.toString()}`);
+};
+
+export const likeReview = (reviewId, token) =>
+  apiRequest(`/reviews/like/${reviewId}`, "POST", null, token);

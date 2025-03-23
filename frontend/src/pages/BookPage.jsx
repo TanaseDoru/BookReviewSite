@@ -1,85 +1,205 @@
-// src/pages/BookPage.jsx
-import { useEffect, useState, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
-import { fetchBookById, fetchAuthorByName, addUserBook, fetchUserBooks, updateUserBook } from '../utils/api';
-import fullStar from '../assets/fullStar.png';
-import emptyStar from '../assets/emptyStar.png';
-import Button from '../components/shared/Button';
+import { useEffect, useState, useContext } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
+import { fetchBookById, fetchAuthorByName, addUserBook, fetchUserBooks, updateUserBook, fetchBookReviews, likeReview, fetchUserReviewForBook, saveReview } from "../utils/api";
+import fullStar from "../assets/fullStar.png";
+import emptyStar from "../assets/emptyStar.png";
+import Button from "../components/shared/Button";
+import Paginate from "../components/ui/Paginate";
 
 const BookPage = () => {
   const { bookId } = useParams();
   const [book, setBook] = useState(null);
   const [authorId, setAuthorId] = useState(null);
   const [userRating, setUserRating] = useState(0);
-  const [userBook, setUserBook] = useState(null); // Store the user's book entry
+  const [userBook, setUserBook] = useState(null);
+  const [userReview, setUserReview] = useState(null);
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const loadBookAndUserBook = async () => {
-      try {
-        // Fetch book details
-        const bookData = await fetchBookById(bookId);
-        setBook(bookData);
+  const [reviews, setReviews] = useState([]);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedRating, setSelectedRating] = useState(null);
+  const [ratingDistribution, setRatingDistribution] = useState({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
+  const [showSpoiler, setShowSpoiler] = useState({});
+  const [likedReviews, setLikedReviews] = useState({});
 
-        // Fetch author ID if available
-        if (bookData.author) {
-          const authorData = await fetchAuthorByName(bookData.author);
-          if (authorData.length > 0) {
-            setAuthorId(authorData[0]._id);
-          }
+  const loadBookAndUserBook = async () => {
+    try {
+      const bookData = await fetchBookById(bookId);
+      setBook(bookData);
+  
+      if (bookData.author) {
+        const authorData = await fetchAuthorByName(bookData.author);
+        if (authorData.length > 0) {
+          setAuthorId(authorData[0]._id);
         }
-
-        // Fetch userBooks to check if this book is in the user's list
-        if (user) {
-          const token = localStorage.getItem('token');
-          const userBooks = await fetchUserBooks(token);
-          const existingUserBook = userBooks.find((ub) => ub.bookId._id === bookId);
-          setUserBook(existingUserBook || null);
-        }
-      } catch (error) {
-        console.error('Error fetching book or user books:', error);
       }
-    };
+  
+      if (user) {
+        const token = localStorage.getItem("token");
+        const userBooks = await fetchUserBooks(token);
+        const existingUserBook = userBooks.find((ub) => ub.bookId._id === bookId);
+        console.log("Existing userBook:", existingUserBook); // Debug
+        setUserBook(existingUserBook || null);
+  
+        try {
+          const reviewData = await fetchUserReviewForBook(bookId, token);
+          if (reviewData && reviewData._id) {
+            setUserReview(reviewData);
+            setUserRating(reviewData.rating);
+          } else {
+            setUserReview(null);
+            setUserRating(0);
+          }
+        } catch (error) {
+          console.error("Error fetching user review:", error);
+          setUserReview(null);
+          setUserRating(0);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching book or user books:", error);
+    }
+  };
+
+  const loadRatingDistribution = async () => {
+    try {
+      const data = await fetchBookReviews(bookId, 1, 1);
+      setRatingDistribution(data.ratingDistribution);
+    } catch (error) {
+      console.error("Error fetching rating distribution:", error);
+    }
+  };
+
+  const loadReviews = async () => {
+    try {
+      const data = await fetchBookReviews(bookId, currentPage, 8, selectedRating);
+      setReviews(data.reviews);
+      setTotalReviews(data.totalReviews);
+      setTotalPages(data.totalPages);
+  
+      const liked = {};
+      data.reviews.forEach((review) => {
+        // Verifică dacă utilizatorul este autentificat și dacă review.likes conține user._id
+        liked[review._id] = user && user._id ? review.likes.includes(user._id) : false;
+      });
+      setLikedReviews(liked);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    }
+  };
+
+  useEffect(() => {
     loadBookAndUserBook();
+    loadRatingDistribution();
   }, [bookId, user]);
 
-  const handleAddToList = async () => {
+  useEffect(() => {
+    loadReviews();
+  }, [bookId, currentPage, selectedRating, user]);
+
+  const handleRatingClick = async (rating) => {
     if (!user) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
     try {
-      const token = localStorage.getItem('token');
-      await addUserBook(bookId, 'Vreau sa citesc', token);
-      // alert('Book added to your list!');
-      // Update userBook state to reflect the new addition
-      setUserBook({ bookId: { _id: bookId }, status: 'Vreau sa citesc' });
+      const token = localStorage.getItem("token");
+      const reviewData = { rating };
+      const savedReview = await saveReview(bookId, reviewData, token);
+      setUserReview(savedReview);
+      setUserRating(rating);
+      loadReviews();
+      loadBookAndUserBook();
     } catch (error) {
-      console.error('Error adding book to list:', error);
-      alert('Failed to add book to your list.');
+      console.error("Error saving review:", error);
+      alert("Failed to save review.");
+    }
+  };
+
+  const handleAddToList = async () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+      const newUserBook = await addUserBook(bookId, "Vreau sa citesc", token);
+      console.log("New userBook:", newUserBook); // Debug
+      setUserBook(newUserBook);
+      await loadBookAndUserBook();
+    } catch (error) {
+      console.error("Error adding book to list:", error);
+      alert("Failed to add book to your list.");
     }
   };
 
   const handleStatusChange = async (newStatus) => {
     if (!user) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
-
+  
     try {
-      const token = localStorage.getItem('token');
-      alert('book id:' + bookId);
-      await updateUserBook(bookId, { status: newStatus }, token);
-      alert('Status updated successfully!');
-      // Update the userBook state to reflect the new status
-      setUserBook({ ...userBook, status: newStatus });
+      const token = localStorage.getItem("token");
+  
+      if (!userBook) {
+        const newUserBook = await addUserBook(bookId, newStatus, token);
+        setUserBook(newUserBook);
+      } else {
+        await updateUserBook(userBook._id, { status: newStatus }, token);
+        setUserBook({ ...userBook, status: newStatus });
+      }
+      // Reîncarcă datele pentru a reflecta modificarea
+      await loadBookAndUserBook();
     } catch (error) {
-      console.error('Error updating book status:', error);
-      alert('Failed to update book status.');
+      console.error("Error updating status:", error);
+      alert("A apărut o eroare la actualizarea statusului!");
     }
+  };
+
+  const handlePageChange = ({ selected }) => {
+    setCurrentPage(selected + 1);
+    window.scrollTo(0, 0);
+  };
+
+  const handleRatingFilter = (rating) => {
+    setSelectedRating(rating === selectedRating ? null : rating);
+    setCurrentPage(1);
+  };
+
+  const handleLikeReview = async (reviewId) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+      const data = await likeReview(reviewId, token);
+      setReviews((prevReviews) =>
+        prevReviews.map((review) =>
+          review._id === reviewId ? { ...review, likes: Array(data.likes).fill({}) } : review
+        )
+      );
+      setLikedReviews((prev) => ({
+        ...prev,
+        [reviewId]: data.hasLiked,
+      }));
+    } catch (error) {
+      console.error("Error liking review:", error);
+      alert("Failed to like/unlike review.");
+    }
+  };
+
+  const toggleSpoiler = (reviewId) => {
+    setShowSpoiler((prev) => ({
+      ...prev,
+      [reviewId]: !prev[reviewId],
+    }));
   };
 
   if (!book) {
@@ -91,7 +211,7 @@ const BookPage = () => {
       {/* Left Section */}
       <div className="w-80 flex flex-col items-center sticky top-10">
         <img
-          src={book.coverImage || '/assets/blankProfile.png'}
+          src={book.coverImage || "/assets/blankProfile.png"}
           alt={book.title}
           className="w-64 h-96 object-cover rounded-lg shadow-lg"
         />
@@ -129,10 +249,18 @@ const BookPage = () => {
                 src={userRating >= star ? fullStar : emptyStar}
                 alt="star"
                 className="w-6 h-6 cursor-pointer"
-                onClick={() => setUserRating(star)}
+                onClick={() => handleRatingClick(star)}
               />
             ))}
           </div>
+          {userReview && (
+            <Button
+              onClick={() => navigate(`/editReview/${bookId}`)}
+              className="mt-2 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-1 rounded-lg"
+            >
+              Modifica Recenzia
+            </Button>
+          )}
         </div>
       </div>
 
@@ -151,7 +279,7 @@ const BookPage = () => {
             <span>{book.author}</span>
           )}
         </h2>
-        <p className="mt-4 text-gray-300">{book.description || 'No description available.'}</p>
+        <p className="mt-4 text-gray-300">{book.description || "No description available."}</p>
         <div className="mt-4">
           <h3 className="text-lg font-semibold">Genres:</h3>
           <div className="flex flex-wrap gap-2 mt-2">
@@ -165,6 +293,137 @@ const BookPage = () => {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Rating Distribution and Reviews */}
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold">Review-uri ({totalReviews} review-uri)</h2>
+          <div className="flex items-center gap-4 mt-4">
+            <div className="text-4xl font-bold">{book.avgRating.toFixed(2)}</div>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <img
+                  key={star}
+                  src={book.avgRating >= star ? fullStar : emptyStar}
+                  alt="star"
+                  className="w-6 h-6"
+                />
+              ))}
+            </div>
+            <div className="text-gray-400">({totalReviews} review-uri)</div>
+          </div>
+
+          {/* Rating Filter */}
+          <div className="mt-4">
+            {[5, 4, 3, 2, 1].map((star) => (
+              <div
+                key={star}
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={() => handleRatingFilter(star)}
+              >
+                <span className="text-lg">{star} stele</span>
+                <div className="flex-1 h-4 bg-gray-200 rounded">
+                  <div
+                    className={`h-full rounded ${
+                      star === 5
+                        ? "bg-green-600"
+                        : star === 4
+                        ? "bg-lime-500"
+                        : star === 3
+                        ? "bg-yellow-500"
+                        : star === 2
+                        ? "bg-orange-500"
+                        : "bg-red-500"
+                    } ${selectedRating === star ? "opacity-100" : "opacity-70"}`}
+                    style={{
+                      width: `${
+                        totalReviews > 0 ? (ratingDistribution[star] / totalReviews) * 100 : 0
+                      }%`,
+                    }}
+                  ></div>
+                </div>
+                <span className="text-gray-400">({ratingDistribution[star]})</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Reviews List */}
+          <div className="mt-6 space-y-4">
+            {reviews.length === 0 ? (
+              <p className="text-gray-400">Nu există review-uri pentru această carte.</p>
+            ) : (
+              reviews
+                .filter((review) => !selectedRating || review.rating === selectedRating)
+                .map((review) => (
+                  <div key={review._id} className="border-b border-gray-700 pb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">
+                        {review.userId.firstName} {review.userId.lastName}
+                      </span>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <img
+                            key={star}
+                            src={review.rating >= star ? fullStar : emptyStar}
+                            alt="star"
+                            className="w-4 h-4"
+                          />
+                        ))}
+                      </div>
+                      <span className="text-gray-400 text-sm">
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {review.isSpoiler && !showSpoiler[review._id] ? (
+                      <div className="mt-2">
+                        <p className="text-yellow-500">Aceasta recenzie conține spoilere.</p>
+                        <button
+                          onClick={() => toggleSpoiler(review._id)}
+                          className="text-blue-400 hover:underline"
+                        >
+                          Vreau să citesc recenzia
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-gray-300">{review.description || "No description provided."}</p>
+                    )}
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        onClick={() => handleLikeReview(review._id)}
+                        className={`flex items-center gap-1 ${
+                          likedReviews[review._id] ? "text-red-500" : "text-gray-400"
+                        } hover:text-red-500 transition`}
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill={likedReviews[review._id] ? "currentColor" : "none"}
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                          />
+                        </svg>
+                        <span>{review.likes.length} Likes</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Paginate
+              pageCount={totalPages}
+              onPageChange={handlePageChange}
+              forcePage={currentPage - 1}
+            />
+          )}
         </div>
       </div>
     </div>
