@@ -1,6 +1,6 @@
 // src/pages/MyBooks.jsx
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { fetchUserBooks, updateUserBook, fetchUserReviewForBook, saveReview } from "../utils/api";
 import Button from "../components/shared/Button";
 
@@ -117,22 +117,28 @@ const MyBooks = () => {
         navigate("/login");
         return;
       }
-
+  
       const reviewData = {
         rating: newRating,
         description: "",
         isSpoiler: false,
       };
       await saveReview(bookId, reviewData, token);
-
-      // Update the reviews state: a review with only a rating is considered a "meaningful" review
+      await updateUserBook(bookId, { rating: newRating }, token);
+  
       setReviews((prev) => ({
         ...prev,
         [bookId]: { hasReview: true, rating: newRating },
       }));
+  
+      setUserBooks(
+        userBooks.map((book) =>
+          book.bookId._id === bookId ? { ...book, rating: newRating } : book
+        )
+      );
     } catch (error) {
       console.error("Error updating rating:", error);
-      if (error.message.includes("401")) {
+      if (error.status === 401) {
         alert("Sesiunea a expirat! Te rugăm să te autentifici din nou.");
         localStorage.removeItem("token");
         navigate("/login");
@@ -233,7 +239,11 @@ const MyBooks = () => {
                     "No cover"
                   )}
                 </td>
-                <td className="p-4" onClick={() => navigate(`/book/${book._id}`)}>{book.bookId.title}</td>
+                <td className="p-4">
+                  <Link to={`/book/${book.bookId._id}`} className="text-blue-500 hover:underline">
+                    {book.bookId.title}
+                  </Link>
+                </td>
                 <td className="p-4">{book.bookId.author}</td>
                 <td className="p-4">{book.bookId.avgRating.toFixed(2) || "—"}</td>
                 <td className="p-4 flex gap-2 items-center">

@@ -172,4 +172,60 @@ router.post("/like/:reviewId", auth, async (req, res) => {
   }
 });
 
+// Create or update a review for a book
+router.post("/book/:bookId", auth, async (req, res) => {
+  try {
+    const { bookId } = req.params;
+    const { rating, description, isSpoiler } = req.body;
+    const userId = req.user.userId;
+
+    // Validate bookId
+    if (!mongoose.Types.ObjectId.isValid(bookId)) {
+      return res.status(400).json({ message: "Invalid book ID" });
+    }
+
+    // Validate rating
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: "Rating must be between 1 and 5" });
+    }
+
+    // Check if the book exists
+    const book = await Book.findById(bookId);
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    // Check if the user already has a review for this book
+    let review = await Review.findOne({ bookId, userId });
+
+    if (review) {
+      // Update existing review
+      review.rating = rating;
+      review.description = description || review.description || "";
+      review.isSpoiler = isSpoiler !== undefined ? isSpoiler : review.isSpoiler;
+      await review.save();
+    } else {
+      // Create a new review
+      review = new Review({
+        bookId,
+        userId,
+        rating,
+        description: description || "",
+        isSpoiler: isSpoiler || false,
+        likes: [],
+      });
+      await review.save();
+    }
+
+    // Update the book's avgRating
+    await updateBookAvgRating(bookId);
+
+    res.status(201).json(review);
+  } catch (err) {
+    console.error("Error in POST /reviews/book/:bookId:", err.message, err.stack);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 module.exports = router;

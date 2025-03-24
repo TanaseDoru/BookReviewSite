@@ -59,8 +59,9 @@ router.patch('/:id', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "Invalid book ID" });
     }
 
+
     const userBook = await UserBook.findOneAndUpdate(
-      { _id: id, userId: req.user.userId },
+      { bookId: id, userId: req.user.userId },
       { $set: { status } },
       { new: true }
     );
