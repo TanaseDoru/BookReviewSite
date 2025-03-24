@@ -1,7 +1,6 @@
-// src/pages/EditReview.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { fetchUserReviewForBook, saveReview } from "../utils/api";
+import { fetchUserReviewForBook, saveReview, fetchBookById } from "../utils/api";
 
 const EditReview = () => {
   const { bookId } = useParams();
@@ -13,11 +12,16 @@ const EditReview = () => {
     startDate: "",
     endDate: "",
   });
+  const [book, setBook] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [charCount, setCharCount] = useState(0); // Am schimbat din wordCount în charCount
+
+  // Funcție pentru calcularea numărului de litere
+  const calculateCharCount = (text) => text.length;
 
   useEffect(() => {
-    const fetchReview = async () => {
+    const fetchData = async () => {
       const token = localStorage.getItem("token");
       if (!token) {
         navigate("/login");
@@ -25,11 +29,15 @@ const EditReview = () => {
       }
 
       try {
+        const bookData = await fetchBookById(bookId);
+        setBook(bookData);
+
         const existingReview = await fetchUserReviewForBook(bookId, token);
         if (existingReview) {
+          const initialDescription = existingReview.description || "";
           setReview({
             rating: existingReview.rating || "",
-            description: existingReview.description || "",
+            description: initialDescription,
             isSpoiler: existingReview.isSpoiler || false,
             startDate: existingReview.startDate
               ? new Date(existingReview.startDate).toISOString().split("T")[0]
@@ -38,16 +46,27 @@ const EditReview = () => {
               ? new Date(existingReview.endDate).toISOString().split("T")[0]
               : "",
           });
+          setCharCount(calculateCharCount(initialDescription)); // Calculăm literele inițiale
         }
       } catch (err) {
-        console.error("Error fetching review:", err);
-        setError("Failed to load review");
+        console.error("Error fetching data:", err);
+        setError("Failed to load book or review");
       } finally {
         setLoading(false);
       }
     };
-    fetchReview();
+    fetchData();
   }, [bookId, navigate]);
+
+  // Gestionăm schimbarea textului și limităm la 500 de litere
+  const handleDescriptionChange = (e) => {
+    const newText = e.target.value;
+    const newCharCount = calculateCharCount(newText);
+    if (newCharCount <= 500) {
+      setReview({ ...review, description: newText });
+      setCharCount(newCharCount);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -87,9 +106,26 @@ const EditReview = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <h1 className="text-3xl font-bold text-white mb-6">
-        {review.description || review.rating ? "Modifica Recenzia" : "Scrie o Recenzie"}
-      </h1>
+      {book && (
+        <div className="flex items-center gap-4 mb-6">
+          {book.coverImage ? (
+            <img
+              src={book.coverImage}
+              alt={book.title}
+              className="w-24 h-32 object-cover rounded"
+            />
+          ) : (
+            <div className="w-24 h-32 bg-gray-700 flex items-center justify-center rounded">
+              <span className="text-gray-400">No cover</span>
+            </div>
+          )}
+          <h1 className="text-3xl font-bold text-white">
+            {review.description || review.rating
+              ? `Modifica Recenzia pentru "${book.title}"`
+              : `Scrie o Recenzie pentru "${book.title}"`}
+          </h1>
+        </div>
+      )}
       {error && <p className="text-red-500 mb-4">{error}</p>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -111,10 +147,21 @@ const EditReview = () => {
           <label className="block mb-1 text-white">Recenzie:</label>
           <textarea
             value={review.description}
-            onChange={(e) => setReview({ ...review, description: e.target.value })}
+            onChange={handleDescriptionChange}
             className="w-full p-2 rounded bg-gray-700 text-white h-40"
             placeholder="Scrie recenzia ta aici..."
           />
+          <div
+            className={`text-sm mt-1 ${
+              charCount >= 400 && charCount < 500
+                ? "text-yellow-500"
+                : charCount === 500
+                ? "text-red-500"
+                : "text-gray-400"
+            }`}
+          >
+            {charCount}/500 litere
+          </div>
         </div>
         <div>
           <label className="flex items-center text-white">

@@ -20,6 +20,7 @@ const BookPage = () => {
   const [reviews, setReviews] = useState([]);
   const [totalReviews, setTotalReviews] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [expandedReviews, setExpandedReviews] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedRating, setSelectedRating] = useState(null);
   const [ratingDistribution, setRatingDistribution] = useState({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
@@ -65,6 +66,13 @@ const BookPage = () => {
     }
   };
 
+  const toggleExpand = (reviewId) => {
+    setExpandedReviews((prev) => ({
+      ...prev,
+      [reviewId]: !prev[reviewId],
+    }));
+  };
+
   const loadRatingDistribution = async () => {
     try {
       const data = await fetchBookReviews(bookId, 1, 1);
@@ -99,7 +107,7 @@ const BookPage = () => {
 
   useEffect(() => {
     loadReviews();
-  }, [bookId, currentPage, selectedRating, user]);
+  }, [bookId, currentPage, user]);
 
   const handleRatingClick = async (rating) => {
     if (!user) {
@@ -278,8 +286,7 @@ const BookPage = () => {
           ) : (
             <span>{book.author}</span>
           )}
-        </h2>
-        <p className="mt-4 text-gray-300">{book.description || "No description available."}</p>
+        </h2><p className="mt-2 text-gray-300 whitespace-pre-line">{book.description || "No description provided."}</p>
         <div className="mt-4">
           <h3 className="text-lg font-semibold">Genres:</h3>
           <div className="flex flex-wrap gap-2 mt-2">
@@ -385,7 +392,37 @@ const BookPage = () => {
                         </button>
                       </div>
                     ) : (
-                      <p className="mt-2 text-gray-300">{review.description || "No description provided."}</p>
+                      <div className="mt-2">
+                        {review.description ? (
+                          (() => {
+                            const words = review.description.split(/\s+/);
+                            if (words.length > 100 && !expandedReviews[review._id]) {
+                              const truncated = words.slice(0, 100).join(" ");
+                              return (
+                                <>
+                                  <p className="text-gray-300 whitespace-pre-line">
+                                    {truncated}...
+                                  </p>
+                                  <button
+                                    onClick={() => toggleExpand(review._id)}
+                                    className="text-blue-400 hover:underline mt-1"
+                                  >
+                                    arată mai mult...
+                                  </button>
+                                </>
+                              );
+                            } else {
+                              return (
+                                <p className="text-gray-300 whitespace-pre-line">
+                                  {review.description}
+                                </p>
+                              );
+                            }
+                          })()
+                        ) : (
+                          <p className="text-gray-300">No description provided.</p>
+                        )}
+                      </div>
                     )}
                     <div className="mt-2 flex items-center gap-2">
                       <button
