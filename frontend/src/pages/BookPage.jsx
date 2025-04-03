@@ -32,18 +32,10 @@ const BookPage = () => {
       const bookData = await fetchBookById(bookId);
       setBook(bookData);
   
-      if (bookData.author) {
-        const authorData = await fetchAuthorByName(bookData.author);
-        if (authorData.length > 0) {
-          setAuthorId(authorData[0]._id);
-        }
-      }
-  
       if (user) {
         const token = localStorage.getItem("token");
         const userBooks = await fetchUserBooks(token);
         const existingUserBook = userBooks.find((ub) => ub.bookId._id === bookId);
-        console.log("Existing userBook:", existingUserBook); // Debug
         setUserBook(existingUserBook || null);
   
         try {
@@ -61,11 +53,19 @@ const BookPage = () => {
           setUserRating(0);
         }
       }
+      
+      if (bookData.author) {
+        const authorData = await fetchAuthorByName(bookData.author);
+        if (authorData.author) { // Verificăm obiectul `author` din răspuns
+          setAuthorId(authorData.author._id); // Setăm ID-ul autorului
+        }
+      }
+  
+      
     } catch (error) {
       console.error("Error fetching book or user books:", error);
     }
   };
-
   const toggleExpand = (reviewId) => {
     setExpandedReviews((prev) => ({
       ...prev,
@@ -159,7 +159,8 @@ const BookPage = () => {
         const newUserBook = await addUserBook(bookId, newStatus, token);
         setUserBook(newUserBook);
       } else {
-        await updateUserBook(userBook._id, { status: newStatus }, token);
+        console.log("BookId is: ", book._id);
+        await updateUserBook(book._id, { status: newStatus }, token);
         setUserBook({ ...userBook, status: newStatus });
       }
       // Reîncarcă datele pentru a reflecta modificarea
@@ -278,7 +279,7 @@ const BookPage = () => {
         <h2 className="text-xl text-gray-400 mt-2">
           {authorId ? (
             <button
-              onClick={() => navigate(`/authors/${book.author}`)}
+              onClick={() => navigate(`/authors/${authorId}`)} // Folosim authorId în loc de book.author
               className="text-blue-400 hover:underline"
             >
               {book.author}

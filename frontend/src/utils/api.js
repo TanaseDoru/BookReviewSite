@@ -54,6 +54,9 @@ export const fetchAuthorByName = (name) =>
 export const fetchUserBooks = (token) =>
   apiRequest('/user-books', 'GET', null, token);
 
+export const fetchAuthorById = (id) =>
+  apiRequest(`/authors/${id}`);
+
 export const addUserBook = (bookId, status, token) =>
   apiRequest('/user-books/add', 'POST', { bookId, status }, token);
 

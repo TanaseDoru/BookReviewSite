@@ -19,7 +19,7 @@ export const router = createBrowserRouter([
       { path: '/', element: <Home /> },
       { path: '/browse', element: <Browse /> },
       { path: '/book/:bookId', element: <BookPage /> },
-      { path: '/authors/:name', element: <AuthorPage /> },
+      { path: '/authors/:id', element: <AuthorPage /> },
       { path: '/myBooks', element: <MyBooks /> },
       { path: '/profile', element: <Profile /> },
       { path: '/login', element: <Login /> },

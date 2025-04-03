@@ -52,6 +52,7 @@ router.post('/add', authMiddleware, async (req, res) => {
 router.patch('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
+
     const { status } = req.body;
 
     // Verifică dacă id-ul este valid
@@ -59,6 +60,7 @@ router.patch('/:id', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "Invalid book ID" });
     }
 
+    console.log("Trying bookId: ", id);
 
     const userBook = await UserBook.findOneAndUpdate(
       { bookId: id, userId: req.user.userId },
