@@ -8,6 +8,7 @@ const bookSchema = new mongoose.Schema({
   coverImage: { type: String, trim: true },
   genres: [{ type: String, trim: true }],
   pages: { type: Number, min: 1 },
+  description: { type: String, trim: true },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Book', bookSchema);

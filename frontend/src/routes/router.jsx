@@ -10,6 +10,7 @@ import Profile from '../pages/Profile';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import EditReview from "../pages/EditReview"; // Import EditRev
+import AdminPage from '../pages/AdminPage';
 
 export const router = createBrowserRouter([
   {
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
       { path: '/login', element: <Login /> },
       { path: '/register', element: <Register /> },
       { path: "/editReview/:bookId", element: <EditReview /> },
+      { path: "/admin", element: <AdminPage /> }, 
     ],
   },
 ]);

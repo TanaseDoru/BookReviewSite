@@ -26,7 +26,13 @@ router.post('/register', async (req, res) => {
     });
 
     await newUser.save();
-    const token = jwt.sign({ userId: newUser._id, email: newUser.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    // Corect: folosim newUser în loc de user
+    const token = jwt.sign(
+      { userId: newUser._id, role: newUser.role, email: newUser.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
     res.status(201).json({ message: '✅ Account created successfully!', token, firstName: newUser.firstName });
   } catch (error) {
@@ -49,7 +55,12 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    const token = jwt.sign({ userId: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    // Adăugăm și role în token, dacă este necesar
+    const token = jwt.sign(
+      { userId: user._id, role: user.role, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
     res.json({ message: '✅ Login successful!', token, firstName: user.firstName });
   } catch (error) {

@@ -90,3 +90,34 @@ export const fetchBookReviews = (bookId, page = 1, limit = 8, rating = null) => 
 
 export const likeReview = (reviewId, token) =>
   apiRequest(`/reviews/like/${reviewId}`, "POST", null, token);
+
+// Funcții pentru statistici
+export const fetchSiteStats = (token) =>
+  apiRequest('/admin/stats', 'GET', null, token);
+
+// Funcții pentru adăugare carte
+export const addBook = (bookData, token) =>
+  apiRequest('/admin/books', 'POST', bookData, token);
+
+// Funcții pentru adăugare autor
+export const addAuthor = (authorData, token) =>
+  apiRequest('/admin/authors', 'POST', authorData, token);
+
+// Funcții pentru gestionare utilizatori și roluri
+export const fetchUsers = (email = '', token) =>
+  apiRequest(`/admin/users?email=${email}`, 'GET', null, token);
+
+export const updateUserRole = (userId, role, token) =>
+  apiRequest(`/admin/users/${userId}/role`, 'PATCH', { role }, token);
+
+// Funcții pentru notificări
+export const fetchAuthorRequests = (token) =>
+  apiRequest('/admin/author-requests', 'GET', null, token);
+
+export const approveAuthorRequest = (requestId, authorId, token) =>
+  apiRequest(`/admin/author-requests/${requestId}/approve`, 'POST', { authorId }, token);
+
+export const rejectAuthorRequest = (requestId, token) =>
+  apiRequest(`/admin/author-requests/${requestId}/reject`, 'DELETE', null, token);
+
+

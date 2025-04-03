@@ -6,16 +6,19 @@ import Button from '../shared/Button';
 import blankProfile from '../../assets/blankProfile.png';
 
 
-const navLinks = [
-  { name: 'Home', route: '/' },
-  { name: 'Browse', route: '/browse' },
-  { name: 'My Books', route: '/myBooks' },
-];
+
 
 const NavBar = () => {
   const { user, setUser } = useContext(AuthContext);
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
+
+  const navLinks = [
+    { name: 'Home', route: '/' },
+    { name: 'Browse', route: '/browse' },
+    { name: 'My Books', route: '/myBooks' },
+    ...(user && user.role === 'admin' ? [{ name: 'Admin', route: '/admin' }] : [])
+  ];
 
   useEffect(() => {
     const fetchUserProfile = async () => {
