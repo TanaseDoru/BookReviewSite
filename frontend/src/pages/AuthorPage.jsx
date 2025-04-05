@@ -11,7 +11,6 @@ const AuthorPage = () => {
   useEffect(() => {
     const loadAuthor = async () => {
       try {
-        console.log(id);
         const data = await fetchAuthorById(id); // Folosim fetchAuthorById
         setAuthor(data.author); // Setăm autorul din răspuns
         setBooks(data.books); // Setăm cărțile din răspuns

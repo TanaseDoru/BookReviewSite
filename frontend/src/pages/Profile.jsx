@@ -1,4 +1,3 @@
-// src/pages/Profile.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchUserProfile, updateProfileName, updateProfilePassword, uploadProfilePicture } from '../utils/api';
@@ -11,12 +10,13 @@ const Profile = () => {
     lastName: '',
     email: '',
     profilePicture: '',
+    role: '',
   });
   const [activeTab, setActiveTab] = useState('profile');
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [currentPassword, setCurrnetPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -45,12 +45,23 @@ const Profile = () => {
     if (!file) return;
 
     try {
-        const token = localStorage.getItem('token');
-        const data = await uploadProfilePicture(file, token);
-        setUser({ ...user, profilePicture: `data:image/png;base64,${data.profilePicture}` }); // Convert to Base64 for display
-        } catch (error) {
-        console.error('Error uploading profile picture:', error);
-        alert('Failed to upload profile picture. Please try again.');
+      const token = localStorage.getItem('token');
+      const data = await uploadProfilePicture(file, token);
+      setUser({ ...user, profilePicture: `data:image/png;base64,${data.profilePicture}` });
+
+      if (user.role === 'author') {
+        await fetch(`http://localhost:3000/api/authors/${user._id}`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ picture: data.profilePicture }),
+        });
+      }
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      alert('Failed to upload profile picture. Please try again.');
     }
   };
 
@@ -58,9 +69,20 @@ const Profile = () => {
     try {
       const token = localStorage.getItem('token');
       await updateProfileName(user.firstName, user.lastName, token);
+
+      if (user.role === 'author') {
+        await fetch(`http://localhost:3000/api/authors/${user._id}`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: `${user.firstName} ${user.lastName}` }),
+        });
+      }
+
       alert('Profile updated successfully!');
       window.location.reload();
-
     } catch (error) {
       console.error('Error updating name:', error);
       alert('Failed to update profile.');
@@ -69,32 +91,27 @@ const Profile = () => {
 
   const handlePasswordChange = async () => {
     if (newPassword !== confirmPassword) {
-      setError('Parolele noi nu se potrivesc.');
+      setError('New passwords do not match.');
       return;
     }
-  
+
     try {
       const token = localStorage.getItem('token');
       await updateProfilePassword(currentPassword, newPassword, token);
-      alert('Parola a fost actualizată cu succes!');
+      alert('Password updated successfully!');
       setShowChangePassword(false);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setError('');
     } catch (error) {
-      console.error('Eroare la actualizarea parolei:', error);
-      if (error.message === 'Current password is incorrect') {
-        setError('Parola curentă este incorectă.');
-      } else {
-        setError(error.message || 'Actualizarea parolei a eșuat.');
-      }
+      console.error('Error updating password:', error);
+      setError(error.message || 'Failed to update password.');
     }
   };
 
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
-      {/* Sidebar */}
       <div className="w-1/4 p-6 border-r border-gray-700">
         <div className="flex flex-col items-center">
           <img
@@ -108,7 +125,6 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Content */}
       <div className="w-3/4 p-6">
         <div className="flex gap-4 mb-8">
           <Button
@@ -206,7 +222,7 @@ const Profile = () => {
                       type="password"
                       placeholder="Enter current Password"
                       value={currentPassword}
-                      onChange={(e) => setCurrnetPassword(e.target.value)}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
                       className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>

@@ -5,9 +5,6 @@ import { AuthContext } from '../../context/AuthContext';
 import Button from '../shared/Button';
 import blankProfile from '../../assets/blankProfile.png';
 
-
-
-
 const NavBar = () => {
   const { user, setUser } = useContext(AuthContext);
   const [isOpen, setIsOpen] = useState(false);
@@ -17,7 +14,8 @@ const NavBar = () => {
     { name: 'Home', route: '/' },
     { name: 'Browse', route: '/browse' },
     { name: 'My Books', route: '/myBooks' },
-    ...(user && user.role === 'admin' ? [{ name: 'Admin', route: '/admin' }] : [])
+    ...(user && user.role === 'admin' ? [{ name: 'Admin', route: '/admin' }] : []),
+    ...(user && user.role === 'author' ? [{ name: 'Author Dashboard', route: `/authorDashboard` }] : [])
   ];
 
   useEffect(() => {

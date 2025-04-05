@@ -11,6 +11,7 @@ import Login from '../pages/Login';
 import Register from '../pages/Register';
 import EditReview from "../pages/EditReview"; // Import EditRev
 import AdminPage from '../pages/AdminPage';
+import AuthorDashboard from '../pages/AuthorDashboard'; // Import AuthorDashboard
 
 export const router = createBrowserRouter([
   {
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
       { path: '/register', element: <Register /> },
       { path: "/editReview/:bookId", element: <EditReview /> },
       { path: "/admin", element: <AdminPage /> }, 
+      { path: "/authorDashboard", element: <AuthorDashboard /> }, // Add AuthorDashboard route
     ],
   },
 ]);
