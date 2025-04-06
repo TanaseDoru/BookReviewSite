@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Button from '../components/shared/Button';
-import { fetchAuthorById, fetchUserProfile } from '../utils/api';
-import { addBook } from '../utils/api';
+import { fetchAuthorById, fetchUserProfile, addBook, updateBook } from '../utils/api';
 
 const AuthorDashboard = () => {
   const { id } = useParams();
@@ -18,15 +17,15 @@ const AuthorDashboard = () => {
     role: '',
     authorId: '',
   });
+  const [modifiedBooks, setModifiedBooks] = useState({}); // Starea pentru modificările temporare
 
   useEffect(() => {
     const fetchAuthorData = async () => {
       const token = localStorage.getItem('token');
       try {
         const _userData = await fetchUserProfile(token);
-        
         setUser(_userData);
-        const data = await fetchAuthorById(user.authorId);
+        const data = await fetchAuthorById(_userData.authorId);
         setBooks(data.books || []);
         setStats({
           totalBooks: data.books.length,
@@ -42,34 +41,50 @@ const AuthorDashboard = () => {
   const handleAddBook = async () => {
     const token = localStorage.getItem('token');
     try {
-        newBook.author = userData.firstName + ' ' + userData.lastName;
-        const response = await addBook(newBook, token);
-        const book = await response.json();
-        setBooks([...books, book]);
-        setNewBook({ title: '', genres: '', pages: '', description: '', coverImage: '' });
-        alert('Book added successfully!');
+      const bookToAdd = {
+        ...newBook,
+        author: `${user.firstName} ${user.lastName}`,
+        genres: newBook.genres.split(',').map((genre) => genre.trim()),
+        pages: parseInt(newBook.pages),
+      };
+      const response = await addBook(bookToAdd, token);
+      setBooks([...books, response]);
+      setNewBook({ title: '', genres: '', pages: '', description: '', coverImage: '' });
+      alert('Book added successfully!');
     } catch (error) {
-        console.error('Error adding book:', error);
-        alert('Failed to add book.');
+      console.error('Error adding book:', error);
+      alert('Failed to add book.');
     }
   };
 
-  const handleModifyBook = async (bookId, updatedData) => {
+  // Funcție pentru actualizarea stării locale cu modificările câmpurilor
+  const handleFieldChange = (bookId, field, value) => {
+    setModifiedBooks((prev) => ({
+      ...prev,
+      [bookId]: {
+        ...prev[bookId],
+        [field]: value,
+      },
+    }));
+  };
+
+  // Funcție pentru trimiterea modificărilor la backend
+  const handleSubmitBookChanges = async (bookId) => {
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:3000/api/books/${bookId}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedData),
-      });
-      if (response.ok) {
-        const updatedBook = await response.json();
-        setBooks(books.map((b) => (b._id === bookId ? updatedBook : b)));
-        alert('Book modified successfully!');
+      const updatedData = modifiedBooks[bookId];
+      if (!updatedData) {
+        alert('No changes to submit');
+        return;
       }
+      const updatedBook = await updateBook(bookId, updatedData, token);
+      setBooks(books.map((b) => (b._id === bookId ? updatedBook : b)));
+      setModifiedBooks((prev) => {
+        const newModified = { ...prev };
+        delete newModified[bookId]; // Șterge modificările temporare după submit
+        return newModified;
+      });
+      alert('Book modified successfully!');
     } catch (error) {
       console.error('Error modifying book:', error);
       alert('Failed to modify book.');
@@ -148,18 +163,58 @@ const AuthorDashboard = () => {
             <h2 className="text-2xl font-bold mb-4">Modify Book</h2>
             {books.map((book) => (
               <div key={book._id} className="mb-4 p-4 bg-gray-800 rounded-lg">
-                <input
-                  type="text"
-                  defaultValue={book.title}
-                  onBlur={(e) => handleModifyBook(book._id, { ...book, title: e.target.value })}
-                  className="w-full p-2 mb-2 rounded-lg bg-gray-700 border border-gray-600"
-                />
-                <input
-                  type="text"
-                  defaultValue={book.genres.join(', ')}
-                  onBlur={(e) => handleModifyBook(book._id, { ...book, genres: e.target.value.split(', ') })}
-                  className="w-full p-2 mb-2 rounded-lg bg-gray-700 border border-gray-600"
-                />
+                <div className="mb-2">
+                  <label className="block text-gray-400 mb-1">Titlu</label>
+                  <input
+                    type="text"
+                    defaultValue={book.title}
+                    onChange={(e) => handleFieldChange(book._id, 'title', e.target.value)}
+                    className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600"
+                  />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-gray-400 mb-1">Genuri (separate prin virgulă)</label>
+                  <input
+                    type="text"
+                    defaultValue={book.genres.join(', ')}
+                    onChange={(e) =>
+                      handleFieldChange(book._id, 'genres', e.target.value.split(',').map((g) => g.trim()))
+                    }
+                    className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600"
+                  />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-gray-400 mb-1">Link Imagine Copertă</label>
+                  <input
+                    type="text"
+                    defaultValue={book.coverImage}
+                    onChange={(e) => handleFieldChange(book._id, 'coverImage', e.target.value)}
+                    className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600"
+                  />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-gray-400 mb-1">Descriere</label>
+                  <textarea
+                    defaultValue={book.description}
+                    onChange={(e) => handleFieldChange(book._id, 'description', e.target.value)}
+                    className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600"
+                  />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-gray-400 mb-1">Număr Pagini</label>
+                  <input
+                    type="number"
+                    defaultValue={book.pages}
+                    onChange={(e) => handleFieldChange(book._id, 'pages', parseInt(e.target.value))}
+                    className="w-full p-2 rounded-lg bg-gray-700 border border-gray-600"
+                  />
+                </div>
+                <Button
+                  onClick={() => handleSubmitBookChanges(book._id)}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg mt-4"
+                >
+                  Submit Changes
+                </Button>
               </div>
             ))}
           </div>

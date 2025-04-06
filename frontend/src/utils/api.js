@@ -114,10 +114,18 @@ export const updateUserRole = (userId, role, token) =>
 export const fetchAuthorRequests = (token) =>
   apiRequest('/admin/author-requests', 'GET', null, token);
 
+export const updateAuthorName = (authorId, name, token) =>
+  apiRequest(`/admin/${authorId}/updateName`, 'PUT', name, token);
+
 export const approveAuthorRequest = (requestId, authorId, token) =>
   apiRequest(`/admin/author-requests/${requestId}/approve`, 'POST', { authorId }, token);
 
 export const rejectAuthorRequest = (requestId, token) =>
   apiRequest(`/admin/author-requests/${requestId}/reject`, 'DELETE', null, token);
+
+// Funcție pentru modificarea unei cărți
+export const updateBook = (bookId, updatedData, token) =>
+  apiRequest(`/books/${bookId}`, 'PUT', updatedData, token);
+
 
 

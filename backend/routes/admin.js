@@ -64,8 +64,8 @@ router.get('/stats', authMiddleware, async (req, res) => {
 // Adăugare carte
 router.post('/books', authMiddleware, async (req, res) => {
   try {
-    if(req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
+    if(req.user.role !== 'admin' && req.user.role !== 'author') {
+        return res.status(403).json({ message: 'Admin or Author role required. Your role is: ' + req.user.role });
       }
     const { title, author, genres, pages, coverImage, description } = req.body;
     const newBook = new Book({
@@ -124,25 +124,58 @@ router.get('/users', authMiddleware, async (req, res) => {
 
 // Actualizare rol utilizator
 router.patch('/users/:id/role', authMiddleware, async (req, res) => {
-  try {
-    if(req.user.role !== 'admin') {
+    try {
+      // Verifică dacă utilizatorul este admin
+      if (req.user.role !== 'admin') {
         return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
       }
-    const { role } = req.body;
-    if (!['admin', 'user', 'author'].includes(role)) {
-      return res.status(400).json({ message: 'Invalid role' });
+  
+      const { role } = req.body;
+  
+      // Verifică dacă rolul este valid
+      if (!['admin', 'user', 'author'].includes(role)) {
+        return res.status(400).json({ message: 'Invalid role' });
+      }
+  
+      // Găsește utilizatorul după ID
+      const user = await User.findById(req.params.id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      // Dacă rolul nou este "author"
+      if (role === 'author') {
+        const authorName = `${user.firstName} ${user.lastName}`;
+  
+        // Caută un autor existent cu același nume (case-insensitive)
+        let author = await Author.findOne({ name: new RegExp(`^${authorName}$`, 'i') });
+  
+        if (!author) {
+          // Creează un nou autor dacă nu există
+          author = new Author({
+            name: authorName,
+            picture: user.profilePicture || '', // Folosește profilePicture al utilizatorului sau șir gol
+          });
+          await author.save();
+        }
+  
+        // Atribuie ID-ul autorului utilizatorului
+        user.authorId = author._id;
+      } else {
+        // Dacă rolul nu este "author", setează authorId la null
+        user.authorId = null;
+      }
+  
+      // Actualizează rolul utilizatorului
+      user.role = role;
+      await user.save();
+  
+      // Returnează utilizatorul actualizat
+      res.json(user);
+    } catch (error) {
+      errorHandler(res, error, 'Error updating user role');
     }
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    user.role = role;
-    await user.save();
-    res.json(user);
-  } catch (error) {
-    errorHandler(res, error, 'Error updating user role');
-  }
-});
+  });
 
 // Listare cereri pentru a deveni autor
 router.get('/author-requests', authMiddleware, async (req, res) => {
@@ -194,6 +227,30 @@ router.delete('/author-requests/:id/reject', authMiddleware, async (req, res) =>
     res.json({ message: 'Author request rejected' });
   } catch (error) {
     errorHandler(res, error, 'Error rejecting author request');
+  }
+});
+
+router.put('authors/:id/updateName', authMiddleware, async (req, res) => {
+  try {
+    console.log('Reached function Authors/:id/Update');
+    if(req.user.role !== 'author' || req.user.role !== 'admin')
+    {
+      return res.status(403).json({ message: 'Admin or Author role required. Your role is: ' + req.user.role });
+    }
+    const {name } = req.body;
+
+    const author = await Author.findById(req.params.id);
+    if (!author) {
+      return res.status(404).json({ message: 'Author not found' });
+    }
+
+    // Atualizare nume autor
+    author.name = name;
+    
+    await author.save();
+
+  } catch (error) {
+    errorHandler(res, error, 'Error updating author name');
   }
 });
 

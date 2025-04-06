@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchUserProfile, updateProfileName, updateProfilePassword, uploadProfilePicture } from '../utils/api';
+import { fetchUserProfile, updateAuthorName, updateProfileName, updateProfilePassword, uploadProfilePicture } from '../utils/api';
 import Button from '../components/shared/Button';
 import blankProfile from '../assets/blankProfile.png';
 
@@ -11,6 +11,7 @@ const Profile = () => {
     email: '',
     profilePicture: '',
     role: '',
+    authorId: '',
   });
   const [activeTab, setActiveTab] = useState('profile');
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -71,14 +72,7 @@ const Profile = () => {
       await updateProfileName(user.firstName, user.lastName, token);
 
       if (user.role === 'author') {
-        await fetch(`http://localhost:3000/api/authors/${user._id}`, {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ name: `${user.firstName} ${user.lastName}` }),
-        });
+        await updateAuthorName(user.authorId, `${user.firstName} ${user.lastName}`, token);
       }
 
       alert('Profile updated successfully!');
