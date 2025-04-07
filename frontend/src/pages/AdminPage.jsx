@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, NavLink } from 'react-router-dom';
 import {
@@ -15,11 +15,13 @@ import {
   updateBook,
   fetchBookById,
 } from '../utils/api';
+import { optimizeAndConvertToBase64, getBase64Size } from '../utils/imageUtils';
 import Button from '../components/shared/Button';
 
 const AdminPage = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
 
   // State definitions
   const [stats, setStats] = useState(null);
@@ -30,6 +32,7 @@ const AdminPage = () => {
     pages: '',
     coverImage: '',
     description: '',
+    imageType: 'url', // 'url' sau 'upload'
   });
   const [authorForm, setAuthorForm] = useState({
     name: '',
@@ -39,6 +42,7 @@ const AdminPage = () => {
     died: '',
     genres: '',
     description: '',
+    imageType: 'url', // 'url' sau 'upload'
   });
   const [users, setUsers] = useState([]);
   const [searchEmail, setSearchEmail] = useState('');
@@ -54,7 +58,14 @@ const AdminPage = () => {
     pages: '',
     coverImage: '',
     description: '',
+    imageType: 'url', // 'url' sau 'upload'
   });
+  const [previewImage, setPreviewImage] = useState(null);
+  const [editPreviewImage, setEditPreviewImage] = useState(null);
+  const [authorPreviewImage, setAuthorPreviewImage] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState('');
+  const [authorExists, setAuthorExists] = useState(true);
+  const [authorChecked, setAuthorChecked] = useState(false);
 
   // Tab definitions
   const tabs = [
@@ -136,6 +147,117 @@ const AdminPage = () => {
     }
   }, [searchBookTitle]);
 
+  // Verifică existența autorului când se schimbă numele
+  useEffect(() => {
+    const checkAuthorExists = async () => {
+      if (bookForm.author.trim() === '') {
+        setAuthorChecked(false);
+        return;
+      }
+      
+      try {
+        const token = localStorage.getItem('token');
+        const result = await fetchAuthorByName(bookForm.author, token);
+        setAuthorExists(result && result.author);
+        setAuthorChecked(true);
+      } catch (error) {
+        console.error('Eroare la verificarea autorului:', error);
+        setAuthorExists(false);
+        setAuthorChecked(true);
+      }
+    };
+
+    const delayDebounceFn = setTimeout(() => {
+      checkAuthorExists();
+    }, 500);
+    
+    return () => clearTimeout(delayDebounceFn);
+  }, [bookForm.author]);
+
+  // Handler pentru încărcarea imaginii cărții
+  const handleBookImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      try {
+        setUploadStatus('Se procesează imaginea...');
+        
+        // Optimizează și convertește imaginea cu setări mai agresive
+        const base64 = await optimizeAndConvertToBase64(file, {
+          maxWidth: 200,
+          maxHeight: 300,
+          quality: 0.5,
+          maxSizeKB: 50
+        });
+        
+        // Verifică dimensiunea imaginii optimizate
+        const sizeInKB = Math.round(getBase64Size(base64) / 1024);
+        setUploadStatus(`Imagine procesată: ${sizeInKB} KB`);
+        
+        setBookForm({ ...bookForm, coverImage: base64 });
+        setPreviewImage(base64);
+      } catch (error) {
+        console.error('Eroare la procesarea imaginii:', error);
+        setUploadStatus('Eroare la procesarea imaginii. Încercați o imagine mai mică sau mai simplă.');
+      }
+    }
+  };
+
+  // Handler pentru încărcarea imaginii cărții în modul de editare
+  const handleEditBookImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      try {
+        setUploadStatus('Se procesează imaginea...');
+        
+        // Optimizează și convertește imaginea cu setări mai agresive
+        const base64 = await optimizeAndConvertToBase64(file, {
+          maxWidth: 200,
+          maxHeight: 300,
+          quality: 0.5,
+          maxSizeKB: 50
+        });
+        
+        // Verifică dimensiunea imaginii optimizate
+        const sizeInKB = Math.round(getBase64Size(base64) / 1024);
+        setUploadStatus(`Imagine procesată: ${sizeInKB} KB`);
+        
+        setEditBookForm({ ...editBookForm, coverImage: base64 });
+        setEditPreviewImage(base64);
+      } catch (error) {
+        console.error('Eroare la procesarea imaginii:', error);
+        setUploadStatus('Eroare la procesarea imaginii. Încercați o imagine mai mică sau mai simplă.');
+      }
+    }
+  };
+
+  // Handler pentru încărcarea imaginii autorului
+  const handleAuthorImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      try {
+        setUploadStatus('Se procesează imaginea...');
+        
+        // Optimizează și convertește imaginea cu setări mai agresive
+        const base64 = await optimizeAndConvertToBase64(file, {
+          maxWidth: 200,
+          maxHeight: 300,
+          quality: 0.5,
+          maxSizeKB: 50
+        });
+        
+        // Verifică dimensiunea imaginii optimizate
+        const sizeInKB = Math.round(getBase64Size(base64) / 1024);
+        setUploadStatus(`Imagine procesată: ${sizeInKB} KB`);
+        
+        setAuthorForm({ ...authorForm, picture: base64 });
+        setAuthorPreviewImage(base64);
+      } catch (error) {
+        console.error('Eroare la procesarea imaginii:', error);
+        setUploadStatus('Eroare la procesarea imaginii. Încercați o imagine mai mică sau mai simplă.');
+      }
+    }
+  };
+
   // Handlers
   const handleBookSubmit = async (e) => {
     e.preventDefault();
@@ -143,12 +265,25 @@ const AdminPage = () => {
       const token = localStorage.getItem('token');
       const { title, author, genres, pages, coverImage, description } = bookForm;
 
+      // Verifică dacă autorul există
       const existingAuthor = await fetchAuthorByName(author, token);
       let authorId;
 
       if (existingAuthor && existingAuthor.author) {
         authorId = existingAuthor.author._id;
       } else {
+        // Dacă autorul nu există, afișează un mesaj și oferă opțiunea de a-l adăuga
+        if (!window.confirm(`Autorul "${author}" nu există în baza de date. Doriți să îl adăugați automat ca autor nou?`)) {
+          // Utilizatorul a ales să nu adauge autorul automat
+          setActiveTab('addAuthor');
+          setAuthorForm({
+            ...authorForm,
+            name: author
+          });
+          return;
+        }
+        
+        // Utilizatorul a ales să adauge autorul automat
         const newAuthorData = { name: author };
         const newAuthor = await addAuthor(newAuthorData, token);
         authorId = newAuthor._id;
@@ -165,7 +300,18 @@ const AdminPage = () => {
 
       await addBook(bookData, token);
       alert('Carte adăugată cu succes!');
-      setBookForm({ title: '', author: '', genres: '', pages: '', coverImage: '', description: '' });
+      setBookForm({ 
+        title: '', 
+        author: '', 
+        genres: '', 
+        pages: '', 
+        coverImage: '', 
+        description: '',
+        imageType: 'url'
+      });
+      setPreviewImage(null);
+      setUploadStatus('');
+      setAuthorChecked(false);
     } catch (error) {
       console.error('Eroare la adăugarea cărții:', error);
       alert('Eroare la adăugarea cărții.');
@@ -180,10 +326,24 @@ const AdminPage = () => {
 
       const existingAuthor = await fetchAuthorByName(author, token);
       if (!existingAuthor || !existingAuthor.author) {
-        alert('Autorul nu există. Te rugăm să adaugi autorul mai întâi.');
-        return;
+        // Dacă autorul nu există, afișează un mesaj și oferă opțiunea de a-l adăuga
+        if (!window.confirm(`Autorul "${author}" nu există în baza de date. Doriți să îl adăugați automat ca autor nou?`)) {
+          // Utilizatorul a ales să nu adauge autorul automat
+          setActiveTab('addAuthor');
+          setAuthorForm({
+            ...authorForm,
+            name: author
+          });
+          return;
+        }
+        
+        // Utilizatorul a ales să adauge autorul automat
+        const newAuthorData = { name: author };
+        const newAuthor = await addAuthor(newAuthorData, token);
+        var authorId = newAuthor._id;
+      } else {
+        var authorId = existingAuthor.author._id;
       }
-      const authorId = existingAuthor.author._id;
 
       const updatedData = {
         title,
@@ -197,7 +357,17 @@ const AdminPage = () => {
       await updateBook(selectedBook._id, updatedData, token);
       alert('Carte actualizată cu succes!');
       setSelectedBook(null);
-      setEditBookForm({ title: '', author: '', genres: '', pages: '', coverImage: '', description: '' });
+      setEditBookForm({ 
+        title: '', 
+        author: '', 
+        genres: '', 
+        pages: '', 
+        coverImage: '', 
+        description: '',
+        imageType: 'url'
+      });
+      setEditPreviewImage(null);
+      setUploadStatus('');
       loadBooks(); // Reîncarcă lista de cărți după actualizare
     } catch (error) {
       console.error('Eroare la actualizarea cărții:', error);
@@ -211,6 +381,10 @@ const AdminPage = () => {
       const token = localStorage.getItem('token');
       const bookDetails = await fetchBookById(book._id);
       setSelectedBook(bookDetails);
+      
+      // Determină tipul imaginii (URL sau base64)
+      const imageType = bookDetails.coverImage && bookDetails.coverImage.startsWith('data:') ? 'upload' : 'url';
+      
       setEditBookForm({
         title: bookDetails.title,
         author: bookDetails.authorId.name,
@@ -218,7 +392,10 @@ const AdminPage = () => {
         pages: bookDetails.pages,
         coverImage: bookDetails.coverImage,
         description: bookDetails.description,
+        imageType: imageType
       });
+      
+      setEditPreviewImage(bookDetails.coverImage);
     } catch (error) {
       console.error('Eroare la încărcarea detaliilor cărții:', error);
       alert('Eroare la încărcarea detaliilor cărții.');
@@ -250,7 +427,18 @@ const AdminPage = () => {
       };
       await addAuthor(authorData, token);
       alert('Autor adăugat cu succes!');
-      setAuthorForm({ name: '', picture: '', born: '', isAlive: true, died: '', genres: '', description: '' });
+      setAuthorForm({ 
+        name: '', 
+        picture: '', 
+        born: '', 
+        isAlive: true, 
+        died: '', 
+        genres: '', 
+        description: '',
+        imageType: 'url'
+      });
+      setAuthorPreviewImage(null);
+      setUploadStatus('');
     } catch (error) {
       console.error('Eroare la adăugarea autorului:', error);
       alert('Eroare la adăugarea autorului.');
@@ -403,10 +591,33 @@ const AdminPage = () => {
               <input
                 type="text"
                 value={bookForm.author}
-                onChange={(e) => setBookForm({ ...bookForm, author: e.target.value })}
+                onChange={(e) => {
+                  setBookForm({ ...bookForm, author: e.target.value });
+                  setAuthorChecked(false);
+                }}
                 className="w-full p-2 rounded bg-gray-700 text-white"
                 required
               />
+              {authorChecked && !authorExists && bookForm.author.trim() !== '' && (
+                <p className="mt-1 text-yellow-400">
+                  Atenție: Autorul "{bookForm.author}" nu există în baza de date. 
+                  Va fi creat automat la adăugarea cărții sau puteți{' '}
+                  <button 
+                    type="button" 
+                    className="text-blue-400 underline"
+                    onClick={() => {
+                      setActiveTab('addAuthor');
+                      setAuthorForm({
+                        ...authorForm,
+                        name: bookForm.author
+                      });
+                    }}
+                  >
+                    adăuga autorul manual
+                  </button>{' '}
+                  cu mai multe detalii.
+                </p>
+              )}
             </div>
             <div>
               <label className="block mb-1">Genuri (separate prin virgulă):</label>
@@ -429,13 +640,68 @@ const AdminPage = () => {
               />
             </div>
             <div>
-              <label className="block mb-1">Imagine copertă (URL):</label>
-              <input
-                type="text"
-                value={bookForm.coverImage}
-                onChange={(e) => setBookForm({ ...bookForm, coverImage: e.target.value })}
-                className="w-full p-2 rounded bg-gray-700 text-white"
-              />
+              <label className="block mb-1">Imagine copertă:</label>
+              <div className="flex items-center mb-2">
+                <label className="inline-flex items-center mr-4">
+                  <input
+                    type="radio"
+                    value="url"
+                    checked={bookForm.imageType === 'url'}
+                    onChange={() => {
+                      setBookForm({ ...bookForm, imageType: 'url' });
+                      setUploadStatus('');
+                    }}
+                    className="mr-1"
+                  />
+                  URL
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    value="upload"
+                    checked={bookForm.imageType === 'upload'}
+                    onChange={() => {
+                      setBookForm({ ...bookForm, imageType: 'upload' });
+                      setUploadStatus('');
+                    }}
+                    className="mr-1"
+                  />
+                  Încarcă imagine
+                </label>
+              </div>
+              
+              {bookForm.imageType === 'url' ? (
+                <input
+                  type="text"
+                  value={bookForm.coverImage}
+                  onChange={(e) => setBookForm({ ...bookForm, coverImage: e.target.value })}
+                  className="w-full p-2 rounded bg-gray-700 text-white"
+                  placeholder="Introdu URL-ul imaginii"
+                />
+              ) : (
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBookImageUpload}
+                    className="w-full p-2 rounded bg-gray-700 text-white"
+                    ref={fileInputRef}
+                  />
+                  {uploadStatus && (
+                    <p className="mt-1 text-sm text-yellow-400">{uploadStatus}</p>
+                  )}
+                  {previewImage && (
+                    <div className="mt-2">
+                      <p className="mb-1">Previzualizare:</p>
+                      <img 
+                        src={previewImage} 
+                        alt="Previzualizare copertă" 
+                        className="max-w-xs max-h-48 rounded"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <label className="block mb-1">Descriere:</label>
@@ -527,13 +793,67 @@ const AdminPage = () => {
                 />
               </div>
               <div>
-                <label className="block mb-1">Imagine copertă (URL):</label>
-                <input
-                  type="text"
-                  value={editBookForm.coverImage}
-                  onChange={(e) => setEditBookForm({ ...editBookForm, coverImage: e.target.value })}
-                  className="w-full p-2 rounded bg-gray-700 text-white"
-                />
+                <label className="block mb-1">Imagine copertă:</label>
+                <div className="flex items-center mb-2">
+                  <label className="inline-flex items-center mr-4">
+                    <input
+                      type="radio"
+                      value="url"
+                      checked={editBookForm.imageType === 'url'}
+                      onChange={() => {
+                        setEditBookForm({ ...editBookForm, imageType: 'url' });
+                        setUploadStatus('');
+                      }}
+                      className="mr-1"
+                    />
+                    URL
+                  </label>
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      value="upload"
+                      checked={editBookForm.imageType === 'upload'}
+                      onChange={() => {
+                        setEditBookForm({ ...editBookForm, imageType: 'upload' });
+                        setUploadStatus('');
+                      }}
+                      className="mr-1"
+                    />
+                    Încarcă imagine
+                  </label>
+                </div>
+                
+                {editBookForm.imageType === 'url' ? (
+                  <input
+                    type="text"
+                    value={editBookForm.coverImage}
+                    onChange={(e) => setEditBookForm({ ...editBookForm, coverImage: e.target.value })}
+                    className="w-full p-2 rounded bg-gray-700 text-white"
+                    placeholder="Introdu URL-ul imaginii"
+                  />
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditBookImageUpload}
+                      className="w-full p-2 rounded bg-gray-700 text-white"
+                    />
+                    {uploadStatus && (
+                      <p className="mt-1 text-sm text-yellow-400">{uploadStatus}</p>
+                    )}
+                    {editPreviewImage && (
+                      <div className="mt-2">
+                        <p className="mb-1">Previzualizare:</p>
+                        <img 
+                          src={editPreviewImage} 
+                          alt="Previzualizare copertă" 
+                          className="max-w-xs max-h-48 rounded"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block mb-1">Descriere:</label>
@@ -558,7 +878,10 @@ const AdminPage = () => {
                       pages: '',
                       coverImage: '',
                       description: '',
+                      imageType: 'url'
                     });
+                    setEditPreviewImage(null);
+                    setUploadStatus('');
                   }}
                   className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
                 >
@@ -586,13 +909,67 @@ const AdminPage = () => {
               />
             </div>
             <div>
-              <label className="block mb-1">Imagine (URL):</label>
-              <input
-                type="text"
-                value={authorForm.picture}
-                onChange={(e) => setAuthorForm({ ...authorForm, picture: e.target.value })}
-                className="w-full p-2 rounded bg-gray-700 text-white"
-              />
+              <label className="block mb-1">Imagine autor:</label>
+              <div className="flex items-center mb-2">
+                <label className="inline-flex items-center mr-4">
+                  <input
+                    type="radio"
+                    value="url"
+                    checked={authorForm.imageType === 'url'}
+                    onChange={() => {
+                      setAuthorForm({ ...authorForm, imageType: 'url' });
+                      setUploadStatus('');
+                    }}
+                    className="mr-1"
+                  />
+                  URL
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="radio"
+                    value="upload"
+                    checked={authorForm.imageType === 'upload'}
+                    onChange={() => {
+                      setAuthorForm({ ...authorForm, imageType: 'upload' });
+                      setUploadStatus('');
+                    }}
+                    className="mr-1"
+                  />
+                  Încarcă imagine
+                </label>
+              </div>
+              
+              {authorForm.imageType === 'url' ? (
+                <input
+                  type="text"
+                  value={authorForm.picture}
+                  onChange={(e) => setAuthorForm({ ...authorForm, picture: e.target.value })}
+                  className="w-full p-2 rounded bg-gray-700 text-white"
+                  placeholder="Introdu URL-ul imaginii"
+                />
+              ) : (
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAuthorImageUpload}
+                    className="w-full p-2 rounded bg-gray-700 text-white"
+                  />
+                  {uploadStatus && (
+                    <p className="mt-1 text-sm text-yellow-400">{uploadStatus}</p>
+                  )}
+                  {authorPreviewImage && (
+                    <div className="mt-2">
+                      <p className="mb-1">Previzualizare:</p>
+                      <img 
+                        src={authorPreviewImage} 
+                        alt="Previzualizare autor" 
+                        className="max-w-xs max-h-48 rounded"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <label className="block mb-1">Data nașterii:</label>

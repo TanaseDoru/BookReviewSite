@@ -18,18 +18,23 @@ const Register = () => {
 
   const handleRegister = async () => {
     try {
+      // Add email validation before making the API call
+      if (!isValidEmail(email)) {
+        setError("Please enter a valid email address");
+        return;
+      }
+  
       await register(firstName, lastName, email, password);
       const loginData = await login(email, password);
       localStorage.setItem("token", loginData.token);
-
-      // Setăm user-ul în context
+  
       setUser({
         firstName: loginData.firstName,
         lastName: loginData.lastName,
         email: loginData.email,
         profilePicture: loginData.profilePicture,
       });
-
+  
       alert(`Cont creat cu succes! Bine ai venit, ${loginData.firstName}!`);
       navigate("/");
     } catch (error) {

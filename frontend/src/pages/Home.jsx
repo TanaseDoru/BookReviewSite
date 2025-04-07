@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Paginate from '../components/ui/Paginate';
 import { fetchBooks } from '../utils/api';
+import { getImageSource } from '../utils/imageUtils';
 
 const Home = () => {
   const [pageNumber, setPageNumber] = useState(0);
@@ -39,9 +40,13 @@ const Home = () => {
         onClick={() => navigate(`/book/${book._id}`)}
       >
         <img
-          src={book.coverImage || '/assets/blankProfile.png'}
+          src={getImageSource(book.coverImage, '/assets/blankProfile.png')}
           alt={book.title}
           className="w-full h-100 object-fill rounded-lg"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = '/assets/blankProfile.png';
+          }}
         />
       </div>
     ));

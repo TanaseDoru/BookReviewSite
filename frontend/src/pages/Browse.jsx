@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Paginate from '../components/ui/Paginate';
 import FilterMenu from '../components/ui/FilterMenu';
 import { fetchBooks } from '../utils/api';
+import { getImageSource } from '../utils/imageUtils';
 
 const Browse = () => {
   const [filters, setFilters] = useState({
@@ -53,9 +54,13 @@ const Browse = () => {
         onClick={() => navigate(`/book/${book._id}`)}
       >
         <img
-          src={book.coverImage || '/assets/blankProfile.png'}
+          src={getImageSource(book.coverImage, '/assets/blankProfile.png')}
           alt={book.title}
           className="w-full h-100 object-fill rounded-lg"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = '/assets/blankProfile.png';
+          }}
         />
         <div className="p-4">
           <h3 className="text-lg font-semibold text-white">{book.title}</h3>

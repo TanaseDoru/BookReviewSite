@@ -1,8 +1,8 @@
 const Book = require('../models/Book');
 
-const isAuthor = async (req, res, next) => {
+const isAuthorOrAdmin = async (req, res, next) => {
   try {
-    if (req.user.role !== 'author') {
+    if (req.user.role !== 'author' && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Access denied. Author role required.' });
     }
 
@@ -12,8 +12,11 @@ const isAuthor = async (req, res, next) => {
     }
 
     // Verifică dacă authorId al cărții corespunde cu authorId al utilizatorului
-    if (book.authorId.toString() !== req.user.authorId.toString()) {
-      return res.status(403).json({ message: 'Access denied. You are not the author of this book.' });
+    if (req.user.role !== 'admin')
+    {
+      if (book.authorId.toString() !== req.user.authorId.toString()) {
+        return res.status(403).json({ message: 'Access denied. You are not the author of this book.' });
+      }
     }
 
     next();
@@ -22,4 +25,4 @@ const isAuthor = async (req, res, next) => {
   }
 };
 
-module.exports = isAuthor;
+module.exports = isAuthorOrAdmin;

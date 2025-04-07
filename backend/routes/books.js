@@ -4,7 +4,7 @@ const Book = require('../models/Book');
 const Author = require('../models/Author');
 const errorHandler = require('../utils/errorHandler');
 const authMiddleware = require('../middleware/auth');
-const isAuthor = require('../middleware/isAuthor');
+const isAuthorOrAdmin = require('../middleware/isAuthorOrAdmin');
 
 const router = express.Router();
 
@@ -74,7 +74,7 @@ router.get('/:bookId', async (req, res) => {
 });
 
 // Update a book by ID
-router.put('/:bookId', authMiddleware, isAuthor, async (req, res) => {
+router.put('/:bookId', authMiddleware, isAuthorOrAdmin, async (req, res) => {
   try {
     const { bookId } = req.params;
     if (!mongoose.isValidObjectId(bookId)) {

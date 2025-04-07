@@ -1,7 +1,17 @@
 import { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { fetchBookById, fetchAuthorByName, addUserBook, fetchUserBooks, updateUserBook, fetchBookReviews, likeReview, fetchUserReviewForBook, saveReview } from "../utils/api";
+import {
+  fetchBookById,
+  fetchAuthorByName,
+  addUserBook,
+  fetchUserBooks,
+  updateUserBook,
+  fetchBookReviews,
+  likeReview,
+  fetchUserReviewForBook,
+  saveReview,
+} from "../utils/api";
 import fullStar from "../assets/fullStar.png";
 import emptyStar from "../assets/emptyStar.png";
 import Button from "../components/shared/Button";
@@ -53,8 +63,6 @@ const BookPage = () => {
           setUserRating(0);
         }
       }
-
-      // Setăm authorId direct din book.authorId
       if (bookData.authorId) {
         setAuthorId(bookData.authorId._id);
       }
@@ -209,13 +217,13 @@ const BookPage = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-white flex gap-10">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-white flex flex-col lg:flex-row gap-10">
       {/* Left Section */}
-      <div className="w-80 flex flex-col items-center sticky top-10">
+      <div className="w-full lg:w-80 flex flex-col items-center lg:sticky top-10">
         <img
           src={book.coverImage || "/assets/blankProfile.png"}
           alt={book.title}
-          className="w-64 h-96 object-cover rounded-lg shadow-lg"
+          className="w-40 sm:w-48 md:w-56 lg:w-64 h-auto object-cover rounded-lg shadow-lg"
         />
         <a href="https://www.amazon.com" target="_blank" rel="noopener noreferrer">
           <Button className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
@@ -227,7 +235,7 @@ const BookPage = () => {
             <select
               value={userBook.status}
               onChange={(e) => handleStatusChange(e.target.value)}
-              className="w-40 bg-gray-700 text-white px-6 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-40 bg-gray-700 text-white px-4 py-2 rounded-lg"
             >
               <option value="Vreau sa citesc">Vreau să citesc</option>
               <option value="Citesc">Citesc</option>
@@ -242,9 +250,9 @@ const BookPage = () => {
             Vreau să citesc
           </Button>
         )}
-        <div className="mt-4">
+        <div className="mt-4 text-center">
           <h3 className="text-lg font-semibold">Rate this book:</h3>
-          <div className="flex gap-1 mt-2">
+          <div className="flex justify-center gap-1 mt-2">
             {[1, 2, 3, 4, 5].map((star) => (
               <img
                 key={star}
@@ -267,7 +275,7 @@ const BookPage = () => {
       </div>
 
       {/* Right Section */}
-      <div className="flex-1">
+    <div className="flex-1">
         <h1 className="text-4xl font-bold">{book.title}</h1>
         <h2 className="text-xl text-gray-400 mt-2">
           {authorId ? (

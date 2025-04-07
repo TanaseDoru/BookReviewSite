@@ -101,7 +101,7 @@ const MyBooks = () => {
       await updateUserBook(bookId, { status: newStatus }, token);
       setUserBooks(
         userBooks.map((book) =>
-          book._id === bookId ? { ...book, status: newStatus } : book
+          book.bookId._id === bookId ? { ...book, status: newStatus } : book
         )
       );
     } catch (error) {
@@ -269,7 +269,7 @@ const MyBooks = () => {
                 <td className="p-4">
                   <select
                     value={book.status}
-                    onChange={(e) => handleStatusChange(book._id, e.target.value)}
+                    onChange={(e) => handleStatusChange(book.bookId._id, e.target.value)}
                     className="p-2 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="Vreau sa citesc">Vreau sa citesc</option>
