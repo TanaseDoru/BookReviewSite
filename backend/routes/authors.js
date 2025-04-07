@@ -1,7 +1,7 @@
 // routes/authors.js
 const express = require('express');
-const Author = require('../models/Author'); // Importăm modelul Author
-const Book = require('../models/Book'); // Păstrăm Book pentru a găsi cărțile autorului
+const Author = require('../models/Author');
+const Book = require('../models/Book');
 const errorHandler = require('../utils/errorHandler');
 
 const router = express.Router();
@@ -9,7 +9,7 @@ const router = express.Router();
 // Get all authors from the authors collection
 router.get('/', async (req, res) => {
   try {
-    const authors = await Author.find(); // Obținem toți autorii din colecția authors
+    const authors = await Author.find();
     res.json(authors);
   } catch (error) {
     errorHandler(res, error, 'Error fetching authors');
@@ -27,8 +27,8 @@ router.get('/name/:name', async (req, res) => {
       return res.status(404).json({ message: 'Author not found' });
     }
 
-    // Găsim cărțile scrise de acest autor în colecția books
-    const books = await Book.find({ author: new RegExp(authorName, 'i') });
+    // Găsim cărțile scrise de acest autor folosind authorId
+    const books = await Book.find({ authorId: author._id }).populate('authorId');
 
     // Returnăm detaliile autorului și cărțile sale
     res.json({
@@ -47,8 +47,8 @@ router.get('/:id', async (req, res) => {
     if (!author) {
       return res.status(404).json({ message: 'Author not found' });
     }
-    // Găsim cărțile scrise de acest autor folosind numele său
-    const books = await Book.find({ author: new RegExp(author.name, 'i') });
+    // Găsim cărțile scrise de acest autor folosind authorId
+    const books = await Book.find({ authorId: author._id }).populate('authorId');
     res.json({
       author,
       books,

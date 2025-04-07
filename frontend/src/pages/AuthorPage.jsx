@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { fetchAuthorById } from '../utils/api';
+import blankProfile from '../assets/blankProfile.png';
 
 const AuthorPage = () => {
   const { id } = useParams(); // Schimbăm de la `name` la `id`
@@ -27,7 +28,7 @@ const AuthorPage = () => {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-white">
       <div className="flex items-center gap-6">
         <img
-          src={author.picture || '/assets/blankProfile.png'}
+          src={author.picture || blankProfile}
           alt={author.name}
           className="w-40 h-40 object-cover rounded-full shadow-lg"
         />

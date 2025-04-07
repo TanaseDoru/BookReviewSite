@@ -43,7 +43,7 @@ const AuthorDashboard = () => {
     try {
       const bookToAdd = {
         ...newBook,
-        author: `${user.firstName} ${user.lastName}`,
+        authorId: user.authorId,
         genres: newBook.genres.split(',').map((genre) => genre.trim()),
         pages: parseInt(newBook.pages),
       };

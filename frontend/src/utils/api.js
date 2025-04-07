@@ -115,7 +115,7 @@ export const fetchAuthorRequests = (token) =>
   apiRequest('/admin/author-requests', 'GET', null, token);
 
 export const updateAuthorName = (authorId, name, token) =>
-  apiRequest(`/admin/${authorId}/updateName`, 'PUT', name, token);
+  apiRequest(`/admin/authors/${authorId}/updateName`, 'PUT', { name }, token);
 
 export const approveAuthorRequest = (requestId, authorId, token) =>
   apiRequest(`/admin/author-requests/${requestId}/approve`, 'POST', { authorId }, token);

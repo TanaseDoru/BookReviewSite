@@ -31,13 +31,13 @@ const BookPage = () => {
     try {
       const bookData = await fetchBookById(bookId);
       setBook(bookData);
-  
+
       if (user) {
         const token = localStorage.getItem("token");
         const userBooks = await fetchUserBooks(token);
         const existingUserBook = userBooks.find((ub) => ub.bookId._id === bookId);
         setUserBook(existingUserBook || null);
-  
+
         try {
           const reviewData = await fetchUserReviewForBook(bookId, token);
           if (reviewData && reviewData._id) {
@@ -53,19 +53,16 @@ const BookPage = () => {
           setUserRating(0);
         }
       }
-      
-      if (bookData.author) {
-        const authorData = await fetchAuthorByName(bookData.author);
-        if (authorData.author) { // Verificăm obiectul `author` din răspuns
-          setAuthorId(authorData.author._id); // Setăm ID-ul autorului
-        }
+
+      // Setăm authorId direct din book.authorId
+      if (bookData.authorId) {
+        setAuthorId(bookData.authorId._id);
       }
-  
-      
     } catch (error) {
       console.error("Error fetching book or user books:", error);
     }
   };
+
   const toggleExpand = (reviewId) => {
     setExpandedReviews((prev) => ({
       ...prev,
@@ -88,10 +85,9 @@ const BookPage = () => {
       setReviews(data.reviews);
       setTotalReviews(data.totalReviews);
       setTotalPages(data.totalPages);
-  
+
       const liked = {};
       data.reviews.forEach((review) => {
-        // Verifică dacă utilizatorul este autentificat și dacă review.likes conține user._id
         liked[review._id] = user && user._id ? review.likes.includes(user._id) : false;
       });
       setLikedReviews(liked);
@@ -137,7 +133,6 @@ const BookPage = () => {
     try {
       const token = localStorage.getItem("token");
       const newUserBook = await addUserBook(bookId, "Vreau sa citesc", token);
-      console.log("New userBook:", newUserBook); // Debug
       setUserBook(newUserBook);
       await loadBookAndUserBook();
     } catch (error) {
@@ -151,19 +146,17 @@ const BookPage = () => {
       navigate("/login");
       return;
     }
-  
+
     try {
       const token = localStorage.getItem("token");
-  
+
       if (!userBook) {
         const newUserBook = await addUserBook(bookId, newStatus, token);
         setUserBook(newUserBook);
       } else {
-        console.log("BookId is: ", book._id);
         await updateUserBook(book._id, { status: newStatus }, token);
         setUserBook({ ...userBook, status: newStatus });
       }
-      // Reîncarcă datele pentru a reflecta modificarea
       await loadBookAndUserBook();
     } catch (error) {
       console.error("Error updating status:", error);
@@ -279,15 +272,16 @@ const BookPage = () => {
         <h2 className="text-xl text-gray-400 mt-2">
           {authorId ? (
             <button
-              onClick={() => navigate(`/authors/${authorId}`)} // Folosim authorId în loc de book.author
+              onClick={() => navigate(`/authors/${authorId}`)}
               className="text-blue-400 hover:underline"
             >
-              {book.author}
+              {book.authorId ? book.authorId.name : "Unknown Author"}
             </button>
           ) : (
-            <span>{book.author}</span>
+            <span>{book.authorId ? book.authorId.name : "Unknown Author"}</span>
           )}
-        </h2><p className="mt-2 text-gray-300 whitespace-pre-line">{book.description || "No description provided."}</p>
+        </h2>
+        <p className="mt-2 text-gray-300 whitespace-pre-line">{book.description || "No description provided."}</p>
         <div className="mt-4">
           <h3 className="text-lg font-semibold">Genres:</h3>
           <div className="flex flex-wrap gap-2 mt-2">

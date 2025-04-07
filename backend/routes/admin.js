@@ -13,10 +13,9 @@ router.use(authMiddleware);
 // Statistici
 router.get('/stats', authMiddleware, async (req, res) => {
   try {
-    if(req.user.role !== 'admin') {
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
     }
-    // Cărțile cu cele mai multe review-uri
     const booksWithMostReviews = await Review.aggregate([
       { $group: { _id: '$bookId', reviewCount: { $sum: 1 } } },
       { $sort: { reviewCount: -1 } },
@@ -26,13 +25,12 @@ router.get('/stats', authMiddleware, async (req, res) => {
       { $project: { title: '$book.title', reviewCount: 1 } },
     ]);
 
-    // Cărțile cu cel mai mare rating
     const booksWithHighestRating = await Book.find()
       .sort({ avgRating: -1 })
       .limit(5)
-      .select('title avgRating');
+      .select('title avgRating')
+      .populate('authorId');
 
-    // Comentariile cu cele mai multe like-uri
     const reviewsWithMostLikes = await Review.find()
       .sort({ likes: -1 })
       .limit(5)
@@ -40,7 +38,6 @@ router.get('/stats', authMiddleware, async (req, res) => {
       .populate('bookId', 'title')
       .select('description likes bookId userId');
 
-    // Utilizatorii cu cele mai multe review-uri
     const usersWithMostReviews = await Review.aggregate([
       { $group: { _id: '$userId', reviewCount: { $sum: 1 } } },
       { $sort: { reviewCount: -1 } },
@@ -64,13 +61,21 @@ router.get('/stats', authMiddleware, async (req, res) => {
 // Adăugare carte
 router.post('/books', authMiddleware, async (req, res) => {
   try {
-    if(req.user.role !== 'admin' && req.user.role !== 'author') {
-        return res.status(403).json({ message: 'Admin or Author role required. Your role is: ' + req.user.role });
-      }
-    const { title, author, genres, pages, coverImage, description } = req.body;
+    if (req.user.role !== 'admin' && req.user.role !== 'author') {
+      return res.status(403).json({ message: 'Admin or Author role required. Your role is: ' + req.user.role });
+    }
+
+    const { title, authorId, genres, pages, coverImage, description } = req.body;
+
+
+    // Verificăm dacă authorId este valid
+    if (!mongoose.isValidObjectId(authorId)) {
+      return res.status(400).json({ message: 'Invalid author ID:' + authorId });
+    }
+
     const newBook = new Book({
       title,
-      author,
+      authorId: authorId, // Folosim authorId în loc de author
       genres,
       pages,
       coverImage,
@@ -78,7 +83,8 @@ router.post('/books', authMiddleware, async (req, res) => {
     });
     console.log('Adding Book: ', newBook);
     await newBook.save();
-    res.status(201).json(newBook);
+    const populatedBook = await Book.findById(newBook._id).populate('authorId');
+    res.status(201).json(populatedBook);
   } catch (error) {
     errorHandler(res, error, 'Error adding book');
   }
@@ -87,9 +93,9 @@ router.post('/books', authMiddleware, async (req, res) => {
 // Adăugare autor
 router.post('/authors', authMiddleware, async (req, res) => {
   try {
-    if(req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
-      }
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
+    }
     const { name, picture, born, isAlive, died, genres, description } = req.body;
     const newAuthor = new Author({
       name,
@@ -110,9 +116,9 @@ router.post('/authors', authMiddleware, async (req, res) => {
 // Listare utilizatori și căutare după email
 router.get('/users', authMiddleware, async (req, res) => {
   try {
-    if(req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
-      }
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
+    }
     const { email } = req.query;
     const query = email ? { email: new RegExp(email, 'i') } : {};
     const users = await User.find(query).select('firstName lastName email role');
@@ -124,65 +130,54 @@ router.get('/users', authMiddleware, async (req, res) => {
 
 // Actualizare rol utilizator
 router.patch('/users/:id/role', authMiddleware, async (req, res) => {
-    try {
-      // Verifică dacă utilizatorul este admin
-      if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
-      }
-  
-      const { role } = req.body;
-  
-      // Verifică dacă rolul este valid
-      if (!['admin', 'user', 'author'].includes(role)) {
-        return res.status(400).json({ message: 'Invalid role' });
-      }
-  
-      // Găsește utilizatorul după ID
-      const user = await User.findById(req.params.id);
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-  
-      // Dacă rolul nou este "author"
-      if (role === 'author') {
-        const authorName = `${user.firstName} ${user.lastName}`;
-  
-        // Caută un autor existent cu același nume (case-insensitive)
-        let author = await Author.findOne({ name: new RegExp(`^${authorName}$`, 'i') });
-  
-        if (!author) {
-          // Creează un nou autor dacă nu există
-          author = new Author({
-            name: authorName,
-            picture: user.profilePicture || '', // Folosește profilePicture al utilizatorului sau șir gol
-          });
-          await author.save();
-        }
-  
-        // Atribuie ID-ul autorului utilizatorului
-        user.authorId = author._id;
-      } else {
-        // Dacă rolul nu este "author", setează authorId la null
-        user.authorId = null;
-      }
-  
-      // Actualizează rolul utilizatorului
-      user.role = role;
-      await user.save();
-  
-      // Returnează utilizatorul actualizat
-      res.json(user);
-    } catch (error) {
-      errorHandler(res, error, 'Error updating user role');
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
     }
-  });
+
+    const { role } = req.body;
+
+    if (!['admin', 'user', 'author'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (role === 'author') {
+      const authorName = `${user.firstName} ${user.lastName}`;
+      let author = await Author.findOne({ name: new RegExp(`^${authorName}$`, 'i') });
+
+      if (!author) {
+        author = new Author({
+          name: authorName,
+          picture: user.profilePicture || '',
+        });
+        await author.save();
+      }
+
+      user.authorId = author._id;
+    } else {
+      user.authorId = null;
+    }
+
+    user.role = role;
+    await user.save();
+
+    res.json(user);
+  } catch (error) {
+    errorHandler(res, error, 'Error updating user role');
+  }
+});
 
 // Listare cereri pentru a deveni autor
 router.get('/author-requests', authMiddleware, async (req, res) => {
   try {
-    if(req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
-      }
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
+    }
     const requests = await User.find({ role: 'user', authorId: { $exists: true } })
       .populate('authorId', 'name')
       .select('firstName lastName email authorId');
@@ -195,9 +190,9 @@ router.get('/author-requests', authMiddleware, async (req, res) => {
 // Aprobare cerere pentru a deveni autor
 router.post('/author-requests/:id/approve', authMiddleware, async (req, res) => {
   try {
-    if(req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
-      }
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
+    }
     const { authorId } = req.body;
     const user = await User.findById(req.params.id);
     if (!user) {
@@ -215,9 +210,9 @@ router.post('/author-requests/:id/approve', authMiddleware, async (req, res) => 
 // Respingere cerere pentru a deveni autor
 router.delete('/author-requests/:id/reject', authMiddleware, async (req, res) => {
   try {
-    if(req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
-      }
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
+    }
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -230,28 +225,42 @@ router.delete('/author-requests/:id/reject', authMiddleware, async (req, res) =>
   }
 });
 
-router.put('authors/:id/updateName', authMiddleware, async (req, res) => {
+router.put('/authors/:id/updateName', authMiddleware, async (req, res) => {
   try {
-    console.log('Reached function Authors/:id/Update');
-    if(req.user.role !== 'author' || req.user.role !== 'admin')
-    {
+    if (req.user.role !== 'author' && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin or Author role required. Your role is: ' + req.user.role });
     }
-    const {name } = req.body;
+
+    const { name } = req.body;
+    if (!name) {
+      return res.status(400).json({ message: 'Name is required' });
+    }
 
     const author = await Author.findById(req.params.id);
     if (!author) {
       return res.status(404).json({ message: 'Author not found' });
     }
 
-    // Atualizare nume autor
     author.name = name;
-    
     await author.save();
 
+    return res.json({ message: 'Author name updated successfully', author });
   } catch (error) {
     errorHandler(res, error, 'Error updating author name');
   }
+});
+
+router.delete('/users/:id', async (req, res) => {
+  const userId = req.params.id;
+  const user = await User.findById(userId);
+  if (user.role === 'author') {
+    const books = await Book.find({ authorId: user.authorId });
+    const bookIds = books.map(book => book._id);
+    await Review.deleteMany({ bookId: { $in: bookIds } });
+    await Book.deleteMany({ authorId: user.authorId });
+  }
+  await User.deleteOne({ _id: userId });
+  res.status(200).json({ message: 'User deleted' });
 });
 
 module.exports = router;

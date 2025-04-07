@@ -1,9 +1,10 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const Book = require('../models/Book');
+const Author = require('../models/Author');
 const errorHandler = require('../utils/errorHandler');
-const authMiddleware = require('../middleware/auth'); // Importă middleware-ul de autentificare
-const isAuthor = require('../middleware/isAuthor'); // Importă middleware-ul pentru verificare autor
+const authMiddleware = require('../middleware/auth');
+const isAuthor = require('../middleware/isAuthor');
 
 const router = express.Router();
 
@@ -13,7 +14,15 @@ router.get('/', async (req, res) => {
     let query = {};
 
     if (req.query.title) query.title = new RegExp(req.query.title, 'i');
-    if (req.query.author) query.author = new RegExp(req.query.author, 'i');
+    if (req.query.author) {
+      // Căutăm autorul pe baza numelui pentru a obține authorId
+      const author = await Author.findOne({ name: new RegExp(req.query.author, 'i') });
+      if (author) {
+        query.authorId = author._id;
+      } else {
+        return res.json([]); // Dacă autorul nu există, returnăm o listă goală
+      }
+    }
     if (req.query.genres) query.genres = new RegExp(req.query.genres, 'i');
 
     if (req.query.minPages || req.query.maxPages) {
@@ -22,7 +31,7 @@ router.get('/', async (req, res) => {
       if (req.query.maxPages) query.pages.$lte = parseInt(req.query.maxPages);
     }
 
-    const books = await Book.find(query);
+    const books = await Book.find(query).populate('authorId');
     res.json(books);
   } catch (error) {
     errorHandler(res, error, 'Error fetching books');
@@ -54,7 +63,7 @@ router.get('/:bookId', async (req, res) => {
     if (!mongoose.isValidObjectId(bookId)) {
       return res.status(400).json({ message: 'Invalid book ID' });
     }
-    const book = await Book.findById(bookId);
+    const book = await Book.findById(bookId).populate('authorId');
     if (!book) {
       return res.status(404).json({ message: 'Book not found' });
     }
@@ -72,19 +81,18 @@ router.put('/:bookId', authMiddleware, isAuthor, async (req, res) => {
       return res.status(400).json({ message: 'Invalid book ID' });
     }
 
-    const { title, author, genres, pages, coverImage, description } = req.body;
+    const { title, genres, pages, coverImage, description } = req.body;
 
     // Construiește obiectul cu datele actualizate
     const updatedData = {};
     if (title) updatedData.title = title;
-    if (author) updatedData.author = author;
     if (genres) updatedData.genres = genres;
     if (pages) updatedData.pages = parseInt(pages);
     if (coverImage) updatedData.coverImage = coverImage;
     if (description) updatedData.description = description;
 
     // Actualizează cartea în baza de date
-    const updatedBook = await Book.findByIdAndUpdate(bookId, updatedData, { new: true });
+    const updatedBook = await Book.findByIdAndUpdate(bookId, updatedData, { new: true }).populate('authorId');
     if (!updatedBook) {
       return res.status(404).json({ message: 'Book not found' });
     }

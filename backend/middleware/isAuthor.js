@@ -11,10 +11,8 @@ const isAuthor = async (req, res, next) => {
       return res.status(404).json({ message: 'Book not found' });
     }
 
-    // Verifică dacă autorul cărții corespunde cu utilizatorul curent
-    console.log('Author of the book:', book.author);
-    console.log('Current user:', req.user);
-    if (book.author !== `${req.user.firstName} ${req.user.lastName}`) {
+    // Verifică dacă authorId al cărții corespunde cu authorId al utilizatorului
+    if (book.authorId.toString() !== req.user.authorId.toString()) {
       return res.status(403).json({ message: 'Access denied. You are not the author of this book.' });
     }
 
