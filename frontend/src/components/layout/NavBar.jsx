@@ -1,5 +1,5 @@
 // src/components/layout/NavBar.jsx
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import Button from '../shared/Button';
@@ -17,36 +17,6 @@ const NavBar = () => {
     ...(user && user.role === 'admin' ? [{ name: 'Admin', route: '/admin' }] : []),
     ...(user && user.role === 'author' ? [{ name: 'Author Dashboard', route: `/authorDashboard` }] : [])
   ];
-
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
-      try {
-        const response = await fetch('http://localhost:3000/api/profile', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-        } else {
-          localStorage.removeItem('token');
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-        localStorage.removeItem('token');
-        setUser(null);
-      }
-    };
-
-    fetchUserProfile();
-  }, [setUser]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -86,7 +56,7 @@ const NavBar = () => {
             {user ? (
               <>
                 <img
-                  src={user.profilePicture != "" ? `data:image/png;base64,${user.profilePicture}` : blankProfile}
+                  src={user.profilePicture ? `data:image/png;base64,${user.profilePicture}` : blankProfile}
                   alt="Profile"
                   className="w-10 h-10 rounded-full cursor-pointer border-2 border-blue-300 hover:border-blue-500 transition"
                   onClick={() => navigate('/profile')}
@@ -136,7 +106,7 @@ const NavBar = () => {
             {user ? (
               <div className="flex flex-col items-center">
                 <img
-                  src={user.profilePicture != "" ? `data:image/png;base64,${user.profilePicture}` : blankProfile}
+                  src={user.profilePicture ? `data:image/png;base64,${user.profilePicture}` : blankProfile}
                   alt="Profile"
                   className="w-12 h-12 rounded-full cursor-pointer border-2 border-blue-300"
                   onClick={() => {
