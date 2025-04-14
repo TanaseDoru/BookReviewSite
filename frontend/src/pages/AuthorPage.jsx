@@ -1,26 +1,51 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchAuthorById } from '../utils/api';
+import { fetchAuthorById, fetchQuestionsByAuthorId, askQuestion } from '../utils/api';
 import blankProfile from '../assets/blankProfile.png';
 
 const AuthorPage = () => {
-  const { id } = useParams(); // Schimbăm de la `name` la `id`
+  const { id } = useParams();
   const [author, setAuthor] = useState(null);
   const [books, setBooks] = useState([]);
+  const [questions, setQuestions] = useState([]);
+  const [showQuestionForm, setShowQuestionForm] = useState(false);
+  const [questionText, setQuestionText] = useState('');
   const navigate = useNavigate();
+  const isLoggedIn = !!localStorage.getItem('token');
 
   useEffect(() => {
     const loadAuthor = async () => {
       try {
-        const data = await fetchAuthorById(id); // Folosim fetchAuthorById
-        setAuthor(data.author); // Setăm autorul din răspuns
-        setBooks(data.books); // Setăm cărțile din răspuns
+        const data = await fetchAuthorById(id);
+        setAuthor(data.author);
+        setBooks(data.books);
+        const questionsData = await fetchQuestionsByAuthorId(id);
+        setQuestions(questionsData);
       } catch (error) {
-        console.error('Error fetching author:', error);
+        console.error('Error fetching author or questions:', error);
       }
     };
     loadAuthor();
   }, [id]);
+
+  const handleAskQuestion = async () => {
+    if (!questionText.trim()) {
+      alert('Întrebarea nu poate fi goală!');
+      return;
+    }
+    const token = localStorage.getItem('token');
+    try {
+      await askQuestion(id, questionText, token);
+      setQuestionText('');
+      setShowQuestionForm(false);
+      const questionsData = await fetchQuestionsByAuthorId(id);
+      setQuestions(questionsData);
+      alert('Întrebarea a fost trimisă cu succes!');
+    } catch (error) {
+      console.error('Error asking question:', error);
+      alert('Eroare la trimiterea întrebării.');
+    }
+  };
 
   if (!author) return <div className="text-white text-center mt-10">Loading...</div>;
 
@@ -57,6 +82,53 @@ const AuthorPage = () => {
             </div>
           ))}
         </div>
+      </div>
+      <div className="mt-8">
+        <h3 className="text-2xl font-semibold mb-4">Întrebări și Răspunsuri</h3>
+        {questions.length > 0 ? (
+          questions.map((question) => (
+            <div key={question._id} className="mb-4 p-4 bg-gray-800 rounded-lg">
+              <p className="text-gray-300">
+                <strong>Întrebare:</strong> {question.questionText}
+              </p>
+              <p className="text-gray-400 text-sm">Întrebat de: {question.userId.username}</p>
+              {question.answerText ? (
+                <p className="text-gray-300 mt-2">
+                  <strong>Răspuns:</strong> {question.answerText}
+                </p>
+              ) : (
+                <p className="text-gray-400 mt-2">Fără răspuns încă.</p>
+              )}
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-400">Nu există întrebări încă.</p>
+        )}
+        {isLoggedIn && (
+          <button
+            onClick={() => setShowQuestionForm(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg mt-4"
+          >
+            Pune o întrebare
+          </button>
+        )}
+        {showQuestionForm && (
+          <div className="mt-4">
+            <textarea
+              placeholder="Scrie întrebarea ta aici..."
+              className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600"
+              rows="4"
+              value={questionText}
+              onChange={(e) => setQuestionText(e.target.value)}
+            />
+            <button
+              onClick={handleAskQuestion}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg mt-2"
+            >
+              Trimite întrebarea
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

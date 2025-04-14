@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Button from '../components/shared/Button';
-import { fetchAuthorById, fetchUserProfile, addBook, updateBook } from '../utils/api';
+import { fetchAuthorById, fetchUserProfile, addBook, updateBook, fetchQuestionsByAuthorId, answerQuestion } from '../utils/api';
 
 const AuthorDashboard = () => {
   const { id } = useParams();
@@ -17,7 +17,9 @@ const AuthorDashboard = () => {
     role: '',
     authorId: '',
   });
-  const [modifiedBooks, setModifiedBooks] = useState({}); // Starea pentru modificările temporare
+  const [modifiedBooks, setModifiedBooks] = useState({});
+  const [questions, setQuestions] = useState([]);
+  const [answers, setAnswers] = useState({});
 
   useEffect(() => {
     const fetchAuthorData = async () => {
@@ -25,12 +27,14 @@ const AuthorDashboard = () => {
       try {
         const _userData = await fetchUserProfile(token);
         setUser(_userData);
-        const data = await fetchAuthorById(_userData.authorId);
+        const data = await fetchAuthorById(id);
         setBooks(data.books || []);
         setStats({
           totalBooks: data.books.length,
           avgRating: data.books.reduce((sum, book) => sum + book.avgRating, 0) / (data.books.length || 1),
         });
+        const questionsData = await fetchQuestionsByAuthorId(id);
+        setQuestions(questionsData);
       } catch (error) {
         console.error('Error fetching author data:', error);
       }
@@ -57,18 +61,13 @@ const AuthorDashboard = () => {
     }
   };
 
-  // Funcție pentru actualizarea stării locale cu modificările câmpurilor
   const handleFieldChange = (bookId, field, value) => {
     setModifiedBooks((prev) => ({
       ...prev,
-      [bookId]: {
-        ...prev[bookId],
-        [field]: value,
-      },
+      [bookId]: { ...prev[bookId], [field]: value },
     }));
   };
 
-  // Funcție pentru trimiterea modificărilor la backend
   const handleSubmitBookChanges = async (bookId) => {
     const token = localStorage.getItem('token');
     try {
@@ -81,13 +80,40 @@ const AuthorDashboard = () => {
       setBooks(books.map((b) => (b._id === bookId ? updatedBook : b)));
       setModifiedBooks((prev) => {
         const newModified = { ...prev };
-        delete newModified[bookId]; // Șterge modificările temporare după submit
+        delete newModified[bookId];
         return newModified;
       });
       alert('Book modified successfully!');
     } catch (error) {
       console.error('Error modifying book:', error);
       alert('Failed to modify book.');
+    }
+  };
+
+  const handleAnswerChange = (questionId, text) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: text }));
+  };
+
+  const handleSubmitAnswer = async (questionId) => {
+    const token = localStorage.getItem('token');
+    const answerText = answers[questionId];
+    if (!answerText || !answerText.trim()) {
+      alert('Răspunsul nu poate fi gol!');
+      return;
+    }
+    try {
+      await answerQuestion(questionId, answerText, token);
+      const questionsData = await fetchQuestionsByAuthorId(id);
+      setQuestions(questionsData);
+      setAnswers((prev) => {
+        const newAnswers = { ...prev };
+        delete newAnswers[questionId];
+        return newAnswers;
+      });
+      alert('Răspuns trimis cu succes!');
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+      alert('Eroare la trimiterea răspunsului.');
     }
   };
 
@@ -111,6 +137,12 @@ const AuthorDashboard = () => {
           className={`block w-full text-left py-2 ${activeTab === 'stats' ? 'bg-blue-600' : 'hover:bg-gray-700'}`}
         >
           Stats
+        </button>
+        <button
+          onClick={() => setActiveTab('notifications')}
+          className={`block w-full text-left py-2 ${activeTab === 'notifications' ? 'bg-blue-600' : 'hover:bg-gray-700'}`}
+        >
+          Notificări
         </button>
       </div>
 
@@ -225,6 +257,45 @@ const AuthorDashboard = () => {
             <h2 className="text-2xl font-bold mb-4">Stats</h2>
             <p>Total Books: {stats.totalBooks}</p>
             <p>Average Rating: {stats.avgRating.toFixed(2)}</p>
+          </div>
+        )}
+
+        {activeTab === 'notifications' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Notificări</h2>
+            {questions.length > 0 ? (
+              questions.map((question) => (
+                <div key={question._id} className="mb-4 p-4 bg-gray-800 rounded-lg">
+                  <p className="text-gray-300">
+                    <strong>Întrebare:</strong> {question.questionText}
+                  </p>
+                  <p className="text-gray-400 text-sm">Întrebat de: {question.userId.username}</p>
+                  {question.answerText ? (
+                    <p className="text-gray-300 mt-2">
+                      <strong>Răspuns:</strong> {question.answerText}
+                    </p>
+                  ) : (
+                    <div>
+                      <textarea
+                        placeholder="Scrie răspunsul tău aici..."
+                        className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 mt-2"
+                        rows="4"
+                        value={answers[question._id] || ''}
+                        onChange={(e) => handleAnswerChange(question._id, e.target.value)}
+                      />
+                      <Button
+                        onClick={() => handleSubmitAnswer(question._id)}
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg mt-2"
+                      >
+                        Trimite Răspuns
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-400">Nu există întrebări încă.</p>
+            )}
           </div>
         )}
       </div>

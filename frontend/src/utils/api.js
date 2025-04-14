@@ -128,4 +128,17 @@ export const updateBook = (bookId, updatedData, token) =>
   apiRequest(`/books/${bookId}`, 'PUT', updatedData, token);
 
 
+// Fetch questions by author ID
+export const fetchQuestionsByAuthorId = async (authorId) => {
+  return apiRequest(`/questions/${authorId}`);
+};
 
+// Ask a question
+export const askQuestion = async (authorId, questionText, token) => {
+  return apiRequest(`/questions/ask/${authorId}`, "POST", { questionText }, token);
+};
+
+// Answer a question
+export const answerQuestion = async (questionId, answerText, token) => {
+  return apiRequest(`/questions/answer/${questionId}`, "PUT", { answerText }, token);
+};

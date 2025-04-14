@@ -19,7 +19,7 @@ app.use('/api/user-books', require('./routes/userBooks'));
 app.use('/api/profile', require('./routes/profile'));
 app.use("/api/reviews", require("./routes/reviews")); // Mount reviews routes
 app.use('/api/admin', require('./routes/admin')); // Mount admin routes
-
+app.use('/api/questions', require('./routes/questions')); // Mount questions routes
 // Start server
 const startServer = async () => {
   await connectDB();
