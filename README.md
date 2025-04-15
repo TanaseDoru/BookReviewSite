@@ -10,6 +10,9 @@ BookReviewSite este o aplicație web concepută pentru recenziile de cărți, pe
   - [Pornirea aplicatiei](#pornirea-aplicatiei)
     - [Backend](#backend)
     - [Frontend](#frontend)
+  - [Sistem de fisiere](#sistem-de-fisiere)
+    - [Frontend](#frontend-1)
+    - [Backend](#backend-1)
   - [Modul de functionare](#modul-de-functionare)
   - [Navigarea pe Site](#navigarea-pe-site)
   - [Functionalitati](#functionalitati)
@@ -54,6 +57,101 @@ Acest proiect oferă un site dedicat recenziilor de cărți unde:
   npm run dev
   ```
 Aplicatia se va lansa la adresa `http://localhost:5173`
+
+## Sistem de fisiere
+### Frontend
+```
+frontend/
+│
+├── node_modules/                 # Fisiere din suita NodeJS
+├── public/                       # Resurse statice (imagini)
+│   ├── image.png                 # Imagine logo de pe prima pagina
+│   └── Logo.png                  # Logo site
+│
+├── src/                          # Sursa principală a fișierelor markup
+│   ├── assets/                   # Imagini folosite in proiect
+│   │   ├── blankProfile.png      # Utilizator fara poza de profil
+│   │   ├── emptyStart.png        # Stea goala (Pentru recenzie)
+│   │   └── fullStar.png          # Stea plina (Pentru recenzie)
+│   │   
+│   ├── components/               # Componente separate utilizate
+│   │   ├── layout/               # Layout-uri
+│   │   │   ├── MainLayout.jsx    # Layout principal
+│   │   │   └── NavBar.jsx        # NavBar-ul site-ului
+│   │   │   
+│   │   ├── shared/               # Componente shared
+│   │   │   └── Button.jsx        # Componenta buton 
+│   │   │    
+│   │   └── ui/
+│   │       ├── FilterMenu.jsx    # Meniu pentru filtrarea cartilor
+│   │       └── Paginate.jsx      # Meniu pentru paginare 
+│   │     
+│   ├── context/                  # Componente de context
+│   │   └── AuthContext.jsx       # Componenta de context de autentificare
+│   │   
+│   ├── pages/                    # Paginile din proiect
+│   │   ├── AdminPage.jsx         
+│   │   ├── AuthorDashboard.jsx
+│   │   ├── AuthorPage.jsx
+│   │   ├── BookPage.jsx
+│   │   ├── Browse.jsx
+│   │   ├── EditReview.jsx
+│   │   ├── Home.jsx
+│   │   ├── Login.jsx
+│   │   ├── MyBooks.jsx
+│   │   ├── Profile.jsx
+│   │   ├── Register.jsx
+│   │   └── Contact.jsx
+│   │
+│   ├── routes/
+│   │   └── router.jsx            # router pentru stabilirea cailor paginilor
+│   ├── styles/
+│   │   └── index.css             # Fisier de styles
+│   └── utils/
+│       ├── api.js                # Comunicare cu backend
+│       └── imageUtils.js         # Functii pentru afisarea imaginilor corespunzator
+│
+│
+└── *alte fisiere de configurare*
+```
+### Backend
+```
+backend/
+|
+├── node_modules/             # Fisiere instalate prin npm
+├── config/                   # Setari globale
+│   ├── db.js                 # Configurarea conexiunii la baza de date
+│   └── errorConfig.js        # Configurarea erorilor si log-urilor
+│
+├── middleware/               # Middleware-uri personalizate
+│   ├── auth.js               # Middleware pentru verificarea autentificarii
+│   └── isAuthorOrAdmin.js    # Middleware pentru permisiuni de autor sau admin
+│
+├── models/                   # Modele pentru baza de date
+│   ├── Book.js               # Model pentru carti
+│   ├── Question.js           # Model pentru intrebari
+│   ├── Review.js             # Model pentru recenzii
+│   ├── User.js               # Model pentru utilizatori
+│   └── UserBook.js           # Model pentru legatura intre utilizator si carti
+│
+├── routes/                   # Rute ale aplicatiei
+│   ├── admin.js              # Rute pentru zona de administrare
+│   ├── auth.js               # Rute pentru autentificare
+│   ├── profile.js            # Rute pentru profilul utilizatorului
+│   ├── questions.js          # Rute pentru intrebari
+│   ├── reviews.js            # Rute pentru recenzii
+│   └── userBooks.js          # Rute pentru actiuni cu cartile utilizatorului
+│
+├── utils/                    # Functii si constante ajutatoare
+│   ├── constants.js          # Constante globale
+│   └── helpers.js            # Functii de utilitate
+|
+├── .env                      # Variabile de mediu
+├── .gitignore                # Fisiere si directoare de ignorat de Git
+├── index.js                  # Punctul de intrare al aplicatiei
+├── package.json
+└── package-lock.json
+```
 
 ## Modul de functionare
  // TO DO
