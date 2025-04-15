@@ -2,6 +2,7 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth');
 const errorHandler = require('../utils/errorHandler');
+const User = require('../models/User');
 
 const router = express.Router();
 
@@ -13,6 +14,21 @@ router.get('/', authMiddleware, async (req, res) => {
     return res.json(users);
   } catch (error) {
     errorHandler(res, error, 'Error fetching users');
+  }
+});
+
+//Fetch User name by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id, { password: 0 }).lean();
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.json(user);
+  } catch (error) {
+    errorHandler(res, error, 'Error fetching user');
   }
 });
 

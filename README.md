@@ -2,8 +2,11 @@
 
 BookReviewSite este o aplicație web concepută pentru recenziile de cărți, permițând utilizatorilor să adauge, să vizualizeze și să interacționeze cu recenziile literare. Proiectul beneficiază de o arhitectură full-stack, folosind stiva MERN.
 
+# TO DO: ACEL ENV adaugat pentru instalare
+
 ## Cuprins
 - [BookReviewSite](#bookreviewsite)
+- [TO DO: ACEL ENV adaugat pentru instalare](#to-do-acel-env-adaugat-pentru-instalare)
   - [Cuprins](#cuprins)
   - [Descriere Proiect](#descriere-proiect)
   - [Instalare](#instalare)

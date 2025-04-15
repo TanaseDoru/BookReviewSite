@@ -1,45 +1,26 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { fetchUserProfile, updateAuthorName, updateProfileName, updateProfilePassword, uploadProfilePicture } from '../utils/api';
+import { useState, useContext } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { updateAuthorName, updateProfileName, updateProfilePassword, uploadProfilePicture } from '../utils/api';
 import Button from '../components/shared/Button';
 import blankProfile from '../assets/blankProfile.png';
+import { AuthContext } from '../context/AuthContext'; // Importăm AuthContext
 
 const Profile = () => {
-  const [user, setUser] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    profilePicture: '',
-    role: '',
-    authorId: '',
-  });
+  const { user, setUser } = useContext(AuthContext); // Accesăm user și setUser din AuthContext
   const [activeTab, setActiveTab] = useState('profile');
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [error, setError] = useState('');
+  const [notification, setNotification] = useState(''); // Pentru mesajul temporar
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      try {
-        const data = await fetchUserProfile(token);
-        setUser(data);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        localStorage.removeItem('token');
-        navigate('/login');
-      }
-    };
-    fetchData();
-  }, [navigate]);
+  // Dacă nu există utilizator, redirectionăm la login
+  if (!user) {
+    navigate('/login');
+    return null;
+  }
 
   const handleProfilePictureUpload = async (e) => {
     const file = e.target.files[0];
@@ -48,7 +29,8 @@ const Profile = () => {
     try {
       const token = localStorage.getItem('token');
       const data = await uploadProfilePicture(file, token);
-      setUser({ ...user, profilePicture: `data:image/png;base64,${data.profilePicture}` });
+      const updatedUser = { ...user, profilePicture: `data:image/png;base64,${data.profilePicture}` };
+      setUser(updatedUser);
 
       if (user.role === 'author') {
         await fetch(`http://localhost:3000/api/authors/${user._id}`, {
@@ -102,6 +84,10 @@ const Profile = () => {
       console.error('Error updating password:', error);
       setError(error.message || 'Failed to update password.');
     }
+  };
+
+  const handleAuthorRequest = () => {
+    setNotification('DE IMPLEMENTAT SISTEMUL DE NOTIFICARI');
   };
 
   return (
@@ -262,7 +248,27 @@ const Profile = () => {
         {activeTab === 'extra' && (
           <div>
             <h3 className="text-2xl font-bold mb-4">Extra</h3>
-            <p className="text-gray-400">This section is empty for now.</p>
+            {user.role === 'author' ? (
+              <div>
+                <p className="text-gray-400 mb-4">Accesează pagina ta de autor:</p>
+                <Link
+                  to={`/authors/${user.authorId}`}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                >
+                  Pagina de Autor
+                </Link>
+              </div>
+            ) : (
+              <div>
+                <Button
+                  onClick={handleAuthorRequest}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                >
+                  Trimite cerere de autor
+                </Button>
+                {notification && <p className="text-yellow-500 mt-4">{notification}</p>}
+              </div>
+            )}
           </div>
         )}
       </div>

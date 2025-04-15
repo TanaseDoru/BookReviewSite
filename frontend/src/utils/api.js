@@ -138,6 +138,11 @@ export const askQuestion = async (authorId, questionText, token) => {
   return apiRequest(`/questions/ask/${authorId}`, "POST", { questionText }, token);
 };
 
+//Fetch userName from id
+export const fetchUserNameById = async (userId) => {
+  return apiRequest(`/users/${userId}`);
+};
+
 // Answer a question
 export const answerQuestion = async (questionId, answerText, token) => {
   return apiRequest(`/questions/answer/${questionId}`, "PUT", { answerText }, token);

@@ -1,17 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchAuthorById, fetchQuestionsByAuthorId, askQuestion } from '../utils/api';
+import { fetchAuthorById, fetchQuestionsByAuthorId, askQuestion, answerQuestion, fetchUserNameById } from '../utils/api';
 import blankProfile from '../assets/blankProfile.png';
+import { AuthContext } from '../context/AuthContext';
 
 const AuthorPage = () => {
   const { id } = useParams();
+  const { user, setUser } = useContext(AuthContext); // Contextul pentru utilizator
   const [author, setAuthor] = useState(null);
   const [books, setBooks] = useState([]);
   const [questions, setQuestions] = useState([]);
+  const [usernames, setUsernames] = useState({}); // Starea pentru username-uri, indexate după userId
   const [showQuestionForm, setShowQuestionForm] = useState(false);
+  const [showAnswerForm, setShowAnswerForm] = useState(null); // State pentru afișarea formularului de răspuns
   const [questionText, setQuestionText] = useState('');
+  const [answerText, setAnswerText] = useState(''); // State pentru textul răspunsului
   const navigate = useNavigate();
   const isLoggedIn = !!localStorage.getItem('token');
+  // Verific dacă utilizatorul este autorul curent (presupunem că author.id este identic cu user.userId)
+  const isAuthor = user && author && user.authorId === author._id;
 
   useEffect(() => {
     const loadAuthor = async () => {
@@ -28,6 +35,29 @@ const AuthorPage = () => {
     loadAuthor();
   }, [id]);
 
+  // Efect pentru a încărca username-ul pentru fiecare întrebare, dacă nu a fost deja extras
+  useEffect(() => {
+    const fetchUserNames = async () => {
+      // Extragem o listă de userId-uri unice din întrebări
+      const ids = [...new Set(questions.map(q => q.userId).filter(Boolean))];
+      const newUsernames = {};
+      for (const userIdObj of ids) {
+        try {
+          const userId = userIdObj._id;
+          const data = await fetchUserNameById(userId);
+          newUsernames[userId] = data.firstName + ' ' + data.lastName;
+        } catch (error) {
+          console.error('Error fetching username for userId', userIdObj._id, error);
+          newUsernames[userIdObj._id] = 'Utilizator necunoscut';
+        }
+      }
+      setUsernames(prev => ({ ...prev, ...newUsernames }));
+    };
+    if (questions.length > 0) {
+      fetchUserNames();
+    }
+  }, [questions]);
+
   const handleAskQuestion = async () => {
     if (!questionText.trim()) {
       alert('Întrebarea nu poate fi goală!');
@@ -36,8 +66,7 @@ const AuthorPage = () => {
     const token = localStorage.getItem('token');
     try {
       await askQuestion(id, questionText, token);
-      setQuestionText('');
-      setShowQuestionForm(false);
+      setQuestionText(''); // curățăm doar câmpul de întrebare, nu ascundem formularul
       const questionsData = await fetchQuestionsByAuthorId(id);
       setQuestions(questionsData);
       alert('Întrebarea a fost trimisă cu succes!');
@@ -47,7 +76,27 @@ const AuthorPage = () => {
     }
   };
 
-  if (!author) return <div className="text-white text-center mt-10">Loading...</div>;
+  const handleAnswerQuestion = async (questionId) => {
+    if (!answerText.trim()) {
+      alert('Răspunsul nu poate fi gol!');
+      return;
+    }
+    const token = localStorage.getItem('token');
+    try {
+      await answerQuestion(questionId, answerText, token);
+      setAnswerText('');
+      setShowAnswerForm(null);
+      const questionsData = await fetchQuestionsByAuthorId(id);
+      setQuestions(questionsData);
+      alert('Răspunsul a fost trimis cu succes!');
+    } catch (error) {
+      console.error('Error answering question:', error);
+      alert('Eroare la trimiterea răspunsului.');
+    }
+  };
+
+  if (!author)
+    return <div className="text-white text-center mt-10">Loading...</div>;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-white">
@@ -91,20 +140,52 @@ const AuthorPage = () => {
               <p className="text-gray-300">
                 <strong>Întrebare:</strong> {question.questionText}
               </p>
-              <p className="text-gray-400 text-sm">Întrebat de: {question.userId.username}</p>
+              <p className="text-gray-400 text-sm">
+                Întrebat de: {usernames[question.userId._id] || 'Utilizator necunoscut'}
+              </p>
               {question.answerText ? (
-                <p className="text-gray-300 mt-2">
-                  <strong>Răspuns:</strong> {question.answerText}
-                </p>
+                <div className="mt-2 p-3 bg-blue-900 rounded-lg">
+                  <p className="text-white font-semibold">
+                    <strong>Răspuns de la {author.name}:</strong>
+                  </p>
+                  <p className="text-gray-200">{question.answerText}</p>
+                </div>
               ) : (
-                <p className="text-gray-400 mt-2">Fără răspuns încă.</p>
+                <>
+                  <p className="text-gray-400 mt-2">Fără răspuns încă.</p>
+                  {isAuthor && (
+                    <button
+                      onClick={() => setShowAnswerForm(question._id)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg mt-2"
+                    >
+                      Răspunde
+                    </button>
+                  )}
+                </>
+              )}
+              {showAnswerForm === question._id && (
+                <div className="mt-4">
+                  <textarea
+                    placeholder="Scrie răspunsul tău aici..."
+                    className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600"
+                    rows="4"
+                    value={answerText}
+                    onChange={(e) => setAnswerText(e.target.value)}
+                  />
+                  <button
+                    onClick={() => handleAnswerQuestion(question._id)}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg mt-2"
+                  >
+                    Trimite răspunsul
+                  </button>
+                </div>
               )}
             </div>
           ))
         ) : (
           <p className="text-gray-400">Nu există întrebări încă.</p>
         )}
-        {isLoggedIn && (
+        {isLoggedIn && !isAuthor && (
           <button
             onClick={() => setShowQuestionForm(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg mt-4"
