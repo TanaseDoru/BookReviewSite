@@ -18,18 +18,11 @@ const Login = () => {
     try {
       const data = await login(email, password);
       localStorage.setItem("token", data.token);
-
-      console.log('Token From Hadnle lOgin: ' + data.token);
-
-      // Actualizăm user-ul în context
-      setUser({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        profilePicture: data.profilePicture
-      });
-
-      alert(`Bine ai venit, ${data.firstName}!`);
+  
+      // Setează toate datele utilizatorului în context
+      setUser(data.user);
+  
+      alert(`Bine ai venit, ${data.user.firstName}!`);
       navigate("/");
     } catch (error) {
       setError(error.message || "Email sau parolă incorectă");

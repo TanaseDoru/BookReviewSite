@@ -55,14 +55,24 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    // Adăugăm și role în token, dacă este necesar
     const token = jwt.sign(
       { userId: user._id, firstName: user.firstName, lastName: user.lastName, role: user.role, email: user.email, authorId: user.authorId },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
 
-    res.json({ message: '✅ Login successful!', token, firstName: user.firstName });
+    // Trimite toate datele relevante despre utilizator
+    res.json({
+      message: '✅ Login successful!',
+      token,
+      user: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profilePicture: user.profilePicture,
+        role: user.role,
+        authorId: user.authorId
+      }
+    });
   } catch (error) {
     errorHandler(res, error, '❌ Error during login');
   }
