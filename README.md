@@ -39,6 +39,7 @@ Acest proiect oferă un site dedicat recenziilor de cărți unde:
    cd BookReviewSite
    ```
 2. **Instalare dependinte pentru Backend**
+  - descarcare **npm** de pe site-ul oficial
   ```bash
   cd backend
   npm install
@@ -81,6 +82,7 @@ Aplicatia se va lansa la adresa `http://localhost:5173`
   ```bash
   mongod --port 27017 --dbpath database-dump/
   ```
+- **Alternativ**, daca nu functioneaza din dump, trebuie introdus manual fiecare json din directorul database-jsons
 
 ## Exemplu navigare pagini
   ### Recomandare parcurgere site
