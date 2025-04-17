@@ -11,6 +11,7 @@ BookReviewSite este o aplicație web concepută pentru recenziile de cărți, pe
     - [Dependinte](#dependinte)
     - [Backend](#backend)
     - [Frontend](#frontend)
+    - [Baza de date](#baza-de-date)
   - [Exemplu navigare pagini](#exemplu-navigare-pagini)
     - [Recomandare parcurgere site](#recomandare-parcurgere-site)
     - [Navigare utilizator neconectat](#navigare-utilizator-neconectat)
@@ -68,6 +69,18 @@ JWT_SECRET="o cheie anume" si MONGO_URI="mongodb://localhost:27017/review-books-
   npm run dev
   ```
 Aplicatia se va lansa la adresa `http://localhost:5173`
+
+### Baza de date
+- In primul rand trebuie instalat `mongod` pentru a putea folosi si crea baza de date
+- **Windows:** https://www.mongodb.com/try/download/community
+- **Arch:** 
+```bash
+  yay -S mongodb
+```
+- Pentru a accesa baza de date si de a o porni se va da comanda din directorul unde se afla repository-ul
+  ```bash
+  mongod --port 27017 --dbpath database-dump/
+  ```
 
 ## Exemplu navigare pagini
   ### Recomandare parcurgere site
