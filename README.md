@@ -79,6 +79,7 @@ Aplicatia se va lansa la adresa `http://localhost:5173`
   - Acesta poate posta review-uri cartilor, un review fiind compus din maxim 500 de caractere, existand si optiunea pentru a marca un review ca *spoiler* pentru a atentiona ceilalti utilizatori ca acea recenzie poate contine spoilere  
   - Acesta mai poate pune o intrebare unui autor, daca acesta are cont valid. Intrebarea aceasta este vizibila tuturor celorlalti utilizatori si poate fi raspunsa de autor
   - Utilizatorul simplu poate face cerere de a deveni autor prin tab-ul *Extra* din setarile contului(dandu-se click pe poza utilizatorului din dreapta sus)
+  - Conectarea se face din butonul de log In din dreapta sus
   
   ### Navigare utilizator autor
   - Utilizatorul autor poate face tot ce face utilizatorul simplu, iar in plus acesta poate adauga noi carti pe care ceilalti utilizatori sa le poata vedea si sa le puna o recenzie. Pentru a adauga o carte autorul trimite o cerere de adaugare de carte utilizatorului admin
