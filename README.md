@@ -107,6 +107,7 @@ Aplicatia se va lansa la adresa `http://localhost:5173`
   - Utilizatorul autor poate face tot ce face utilizatorul simplu, iar in plus acesta poate adauga noi carti pe care ceilalti utilizatori sa le poata vedea si sa le puna o recenzie. Pentru a adauga o carte autorul trimite o cerere de adaugare de carte utilizatorului admin
   - Acesta poate modifica cartile existente si poate vedea ce statistici are legate de carti: numar carti publicate, media review-urilor
   - In plus, autorul are un tab de notificari prin care poate vedea intrebarile puse de alti utilizatori
+  - Tab-ul *Extra* de la profil il va duce pe autor pe pagina publica a acestuia
 
   ### Navigare utilizator admin
   - Utilizatorul admin poate face orice face un utilizator simplu, dar are o pagina in plus de `Admin`

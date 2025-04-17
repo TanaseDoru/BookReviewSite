@@ -1,0 +1,52 @@
+[{
+  "_id": {
+    "$oid": "68014a9831ec1f1b0271f4b4"
+  },
+  "userId": {
+    "$oid": "67eeb9614b7307a026ca25d7"
+  },
+  "bookId": {
+    "$oid": "68014a7b31ec1f1b0271f46b"
+  },
+  "rating": 3,
+  "description": "Frumoasa carte, prietene!",
+  "isSpoiler": true,
+  "startDate": null,
+  "endDate": null,
+  "likes": [],
+  "createdAt": {
+    "$date": "2025-04-17T18:38:16.378Z"
+  },
+  "updatedAt": {
+    "$date": "2025-04-17T18:38:16.378Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68014aee31ec1f1b0271f5a8"
+  },
+  "userId": {
+    "$oid": "68014adf31ec1f1b0271f57e"
+  },
+  "bookId": {
+    "$oid": "68014a7b31ec1f1b0271f46b"
+  },
+  "rating": 4,
+  "description": "Imi place",
+  "isSpoiler": false,
+  "startDate": null,
+  "endDate": null,
+  "likes": [
+    {
+      "$oid": "67eeb00e3be6f241a4770cf0"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-04-17T18:39:42.715Z"
+  },
+  "updatedAt": {
+    "$date": "2025-04-17T18:39:42.716Z"
+  },
+  "__v": 1
+}]

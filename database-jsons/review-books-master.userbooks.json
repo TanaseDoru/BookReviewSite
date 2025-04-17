@@ -1,0 +1,48 @@
+[{
+  "_id": {
+    "$oid": "68014ac331ec1f1b0271f55e"
+  },
+  "userId": {
+    "$oid": "67eeb9614b7307a026ca25d7"
+  },
+  "bookId": {
+    "$oid": "68014a7b31ec1f1b0271f46b"
+  },
+  "status": "Vreau sa citesc",
+  "dateAdded": {
+    "$date": "2025-04-17T18:38:59.365Z"
+  },
+  "dateRead": null,
+  "rating": null,
+  "createdAt": {
+    "$date": "2025-04-17T18:38:59.367Z"
+  },
+  "updatedAt": {
+    "$date": "2025-04-17T18:38:59.367Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68014af131ec1f1b0271f5b5"
+  },
+  "userId": {
+    "$oid": "68014adf31ec1f1b0271f57e"
+  },
+  "bookId": {
+    "$oid": "68014a7b31ec1f1b0271f46b"
+  },
+  "status": "Citesc",
+  "dateAdded": {
+    "$date": "2025-04-17T18:39:45.756Z"
+  },
+  "dateRead": null,
+  "rating": null,
+  "createdAt": {
+    "$date": "2025-04-17T18:39:45.757Z"
+  },
+  "updatedAt": {
+    "$date": "2025-04-17T18:39:46.663Z"
+  },
+  "__v": 0
+}]

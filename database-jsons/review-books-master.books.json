@@ -1,0 +1,73 @@
+[{
+  "_id": {
+    "$oid": "68014a7b31ec1f1b0271f46b"
+  },
+  "title": "Stalpii Pamantului",
+  "authorId": {
+    "$oid": "68014a3e31ec1f1b0271f45c"
+  },
+  "avgRating": 3.5,
+  "coverImage": "https://cdn4.libris.ro/img/pozeprod/992/991013-1.jpg",
+  "genres": [
+    "Adventure",
+    "Fiction",
+    "History"
+  ],
+  "pages": 896,
+  "description": "Stalpii Pamantului Descriere",
+  "createdAt": {
+    "$date": "2025-04-17T18:37:47.295Z"
+  },
+  "updatedAt": {
+    "$date": "2025-04-17T18:39:50.337Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68014b2131ec1f1b0271f5e7"
+  },
+  "title": "Armele luminii",
+  "authorId": {
+    "$oid": "68014a3e31ec1f1b0271f45c"
+  },
+  "avgRating": 0,
+  "coverImage": "https://media.elefant.ro/mnresize/150/150/is/product-images/cartero/beae5340/6f29/4129/9796/e8b40750d73f/beae5340-6f29-4129-9796-e8b40750d73f_1.jpg",
+  "genres": [
+    "Fiction",
+    "History"
+  ],
+  "pages": 964,
+  "description": "",
+  "createdAt": {
+    "$date": "2025-04-17T18:40:33.131Z"
+  },
+  "updatedAt": {
+    "$date": "2025-04-17T18:40:33.131Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68014cbb31ec1f1b0271f6fb"
+  },
+  "title": "Utilizarea sistemelor de operare",
+  "authorId": {
+    "$oid": "67eed5e465aee504981680fc"
+  },
+  "avgRating": 0,
+  "coverImage": "https://m.media-amazon.com/images/I/81YfOQVV4eL._AC_UF1000,1000_QL80_.jpg",
+  "genres": [
+    "Tech",
+    "Education"
+  ],
+  "pages": 400,
+  "description": "Cum sa utilizam sistemul de operare UNIX",
+  "createdAt": {
+    "$date": "2025-04-17T18:47:23.601Z"
+  },
+  "updatedAt": {
+    "$date": "2025-04-17T18:47:23.601Z"
+  },
+  "__v": 0
+}]

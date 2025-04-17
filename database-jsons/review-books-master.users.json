@@ -1,0 +1,96 @@
+[{
+  "_id": {
+    "$oid": "67eeb00e3be6f241a4770cf0"
+  },
+  "firstName": "admin",
+  "lastName": "admin",
+  "email": "admin@gmail.com",
+  "password": "$2b$10$z7CldFBrgauE7YC5EFh3AOJptNQrs2fw5O.33PR.l.1e3rOrmN.8a",
+  "profilePicture": "",
+  "role": "admin",
+  "createdAt": {
+    "$date": "2025-04-03T15:58:06.633Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67eeb9614b7307a026ca25d7"
+  },
+  "firstName": "Andreius",
+  "lastName": "Moldeus",
+  "email": "m@m.m",
+  "password": "$2b$10$lvlxioGxeE0r0GYU.nDEzO6Bcm3QxP4m3x3eS68xYj38CawF6mNMq",
+  "profilePicture": "",
+  "role": "author",
+  "createdAt": {
+    "$date": "2025-04-03T16:37:53.422Z"
+  },
+  "__v": 0,
+  "authorId": {
+    "$oid": "67eed5e465aee504981680fc"
+  }
+},
+{
+  "_id": {
+    "$oid": "67fb85f4ab85abd3643cfa66"
+  },
+  "firstName": "Ion",
+  "lastName": "Merdenescu",
+  "email": "a@a.a",
+  "password": "$2b$10$Wc80S5w6TuaqrZGoDGzb.uIszJg2p.rr6G2rzuzdzDDBgLuTz8nV.",
+  "profilePicture": "",
+  "role": "user",
+  "createdAt": {
+    "$date": "2025-04-13T09:37:56.268Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67fe860f3b77a2ecb6b53cd3"
+  },
+  "firstName": "Dumitru",
+  "lastName": "Prunariu",
+  "email": "b@b.b",
+  "password": "$2b$10$WDwmBfXTNKjc0CGT2p4oRu1HN3Bm.2D2gJRl1GF4B0YtYS5fMkkDm",
+  "profilePicture": "",
+  "role": "user",
+  "createdAt": {
+    "$date": "2025-04-15T16:15:11.092Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "680149e9210035efce95fc5d"
+  },
+  "firstName": "Ken",
+  "lastName": "Follett",
+  "email": "k@gmail.com",
+  "password": "$2b$10$W3ikZqyEZJkf9vRcLKMVAuErVBhlmR/7KdFP.wsYax4N11pqx3T0e",
+  "profilePicture": "",
+  "role": "author",
+  "createdAt": {
+    "$date": "2025-04-17T18:35:21.073Z"
+  },
+  "__v": 0,
+  "authorId": {
+    "$oid": "68014a3e31ec1f1b0271f45c"
+  }
+},
+{
+  "_id": {
+    "$oid": "68014adf31ec1f1b0271f57e"
+  },
+  "firstName": "Doru",
+  "lastName": "Tanase",
+  "email": "doru@gmail.com",
+  "password": "$2b$10$HeNnD86JZoHiA7N/uZ1A7uv6P3pDbasZJ9/vTeULJGYbIzVVNP4DK",
+  "profilePicture": "",
+  "role": "user",
+  "createdAt": {
+    "$date": "2025-04-17T18:39:27.346Z"
+  },
+  "__v": 0
+}]

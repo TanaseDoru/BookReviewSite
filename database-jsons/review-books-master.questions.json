@@ -1,0 +1,37 @@
+[{
+  "_id": {
+    "$oid": "68014b4131ec1f1b0271f630"
+  },
+  "authorId": {
+    "$oid": "68014a3e31ec1f1b0271f45c"
+  },
+  "userId": {
+    "$oid": "67eeb9614b7307a026ca25d7"
+  },
+  "questionText": "Iti place ce faci?",
+  "answerText": "Dap",
+  "createdAt": {
+    "$date": "2025-04-17T18:41:05.503Z"
+  },
+  "__v": 0,
+  "answeredAt": {
+    "$date": "2025-04-17T18:41:26.160Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68014b4931ec1f1b0271f635"
+  },
+  "authorId": {
+    "$oid": "68014a3e31ec1f1b0271f45c"
+  },
+  "userId": {
+    "$oid": "67eeb9614b7307a026ca25d7"
+  },
+  "questionText": "Salut!",
+  "answerText": "",
+  "createdAt": {
+    "$date": "2025-04-17T18:41:13.528Z"
+  },
+  "__v": 0
+}]
