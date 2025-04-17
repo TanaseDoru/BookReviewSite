@@ -2,23 +2,25 @@
 
 BookReviewSite este o aplicație web concepută pentru recenziile de cărți, permițând utilizatorilor să adauge, să vizualizeze și să interacționeze cu recenziile literare. Proiectul beneficiază de o arhitectură full-stack, folosind stiva MERN.
 
-# TO DO: ACEL ENV adaugat pentru instalare
-
 ## Cuprins
 - [BookReviewSite](#bookreviewsite)
-- [TO DO: ACEL ENV adaugat pentru instalare](#to-do-acel-env-adaugat-pentru-instalare)
   - [Cuprins](#cuprins)
   - [Descriere Proiect](#descriere-proiect)
   - [Instalare](#instalare)
   - [Pornirea aplicatiei](#pornirea-aplicatiei)
+    - [Dependinte](#dependinte)
     - [Backend](#backend)
     - [Frontend](#frontend)
+  - [Exemplu navigare pagini](#exemplu-navigare-pagini)
+    - [Navigare utilizator neconectat](#navigare-utilizator-neconectat)
+    - [Navigare utilizator simplu](#navigare-utilizator-simplu)
+    - [Navigare utilizator autor](#navigare-utilizator-autor)
+    - [Navigare utilizator admin](#navigare-utilizator-admin)
+  - [Scurta descriere a paginilor](#scurta-descriere-a-paginilor)
+  - [Functionalitati](#functionalitati)
   - [Sistem de fisiere](#sistem-de-fisiere)
     - [Frontend](#frontend-1)
     - [Backend](#backend-1)
-  - [Modul de functionare](#modul-de-functionare)
-  - [Navigarea pe Site](#navigarea-pe-site)
-  - [Functionalitati](#functionalitati)
   - [Tehnologii folosite](#tehnologii-folosite)
 
 ## Descriere Proiect
@@ -44,6 +46,10 @@ Acest proiect oferă un site dedicat recenziilor de cărți unde:
   npm install
   ```
 ## Pornirea aplicatiei
+### Dependinte
+In primul rand trebuie creat un fisier .env in directorul `backend` unde se vor definii date precum
+JWT_SECRET="o cheie anume" si MONGO_URI="mongodb://localhost:27017/review-books-master"
+
 ### Backend
 - Din directorul `backend`, porniti serverul cu:
   ```bash
@@ -60,6 +66,57 @@ Acest proiect oferă un site dedicat recenziilor de cărți unde:
   npm run dev
   ```
 Aplicatia se va lansa la adresa `http://localhost:5173`
+
+## Exemplu navigare pagini
+  ### Navigare utilizator neconectat
+  - Utilizatorul neconectat poate accesa carti pentru a putea vizualiza descrierea si recenziile cartilor acestea
+  - Acesta poate accesa site-urile autorilor si poate vedea intrebarile puse de alti utilizatori
+  - Daca utilizatorul neconectat acceseaza pagina de *My Books*, acesta va fi redirectionat pe pagina de logare. Acesta va fi redirectionat pe pagina de logare si daca incearca sa puna o recenzie pentru o carte
+
+  ### Navigare utilizator simplu
+  - Utilizatorul normal isi poate accesa profilul acestuia si poate face modificari la numele si prenumele acestuia, poza de profil, precum sa isi si schimbe parola
+  - Cartile pot fi adaugate in "biblioteca" utilizatorului, marcandu-o pe aceasta ca fiind "Citit", "Vreau sa Citesc", "Citesc"
+  - Acesta poate posta review-uri cartilor, un review fiind compus din maxim 500 de caractere, existand si optiunea pentru a marca un review ca *spoiler* pentru a atentiona ceilalti utilizatori ca acea recenzie poate contine spoilere  
+  - Acesta mai poate pune o intrebare unui autor, daca acesta are cont valid. Intrebarea aceasta este vizibila tuturor celorlalti utilizatori si poate fi raspunsa de autor
+  - Utilizatorul simplu poate face cerere de a deveni autor prin tab-ul *Extra* din setarile contului(dandu-se click pe poza utilizatorului din dreapta sus)
+  
+  ### Navigare utilizator autor
+  - Utilizatorul autor poate face tot ce face utilizatorul simplu, iar in plus acesta poate adauga noi carti pe care ceilalti utilizatori sa le poata vedea si sa le puna o recenzie. Pentru a adauga o carte autorul trimite o cerere de adaugare de carte utilizatorului admin
+  - Acesta poate modifica cartile existente si poate vedea ce statistici are legate de carti: numar carti publicate, media review-urilor
+  - In plus, autorul are un tab de notificari prin care poate vedea intrebarile puse de alti utilizatori
+
+  ### Navigare utilizator admin
+  - Utilizatorul admin poate face orice face un utilizator simplu, dar are o pagina in plus de `Admin`
+  - In aceasta pagina adminul poate vedea:
+    - Statistici
+    - Poate adauga carti
+    - Poate modifica carti
+    - Poate adauga un autor
+    - Atribue Roluri
+    - Dezactiveaza conturi
+    - Pagina de Notificari 
+
+## Scurta descriere a paginilor
+- **Pagina principala(/)**: Pe aceasta pagina utilizatorul poate vedea cartile recomandate pentru acesta, daca este logat. Daca nu este logat la un cont, acesta va vedea o lista cu toate cartile disponibile. Recomandarea de carti se face pe baza cartilor pe care le-a citit/vrea sa le citeasca
+- **Pagine de Browse(/browse)**: Pe aceasta pagina se pot observa toate cartile disponibile si se poate face filtrare dupa Nume/Autor/Gen/Numar pagini
+- **My Books(/myBooks)**: Aceasta pagina este disponibila doar utilizatorilor conectati. Aici se gasesc cartile pe care utilziatorul le are in colectie(Citite, le citeste sau le-a citit). Tot aici utilizatorul poate face o recenzie rapida pentru o carte anume, precum si editarea unei recenzii existente/adaugarea unei recenzii noi. Cartile din colectie pot fi filtrate dupa Data adaugata, data citita, recenzie, titlu sau autor.
+- **Pagina review carte(/editReview/:id)**: Aici se pot adauga sau modifica review-uri pentru o anumita carte. Se poate alege Rating, adauga recenzia (maxim 500 de litere), se poate marca drept spoiler si se pot alege date pentru inceput citire sau terminat citire.
+- **Pagina Carte(/book/:id)**: Se apasa pe o carte din Browse/Home si se afiseaza pagina cartii respective, unde se vad detalii despre carte, se poate da review, se pot filtra dupa stele daca se da click pe bara orizontala de la numarul de stele. In pluse se poate da click pe Gen, utilizatorul fiind redirectat la tab-ul de browse cu filtru pe genul selectat 
+- **Pagina profile(/profile)**: Pe pagina de profil, un utilizator isi poate schimba numele sau prenumele, adauga poza de profil, poate vizualiza email-ul si isi poate schimba parola. Mai exista si un tab de extra unde poate aplica sa fie autor
+- **Contact(/contact)**: ***De IMPLEMENTAT!***
+- **Author Dasboard(/authorDashboard)**: Pagina de author Dashboard poate fi accesata doar de utilizatori care au rol de autor si poate adauga o carte noua, modifica o carte, poate vizualiza statistici legate de cartile acestuia, si poate vedea notificarile primite, adica ce intrebari a primit de la alti utilizatori
+- **Admin Dashboard(/admin)**: Utilizatorul cu rol de admin poate vizualiza statistici legate de carti/review-uri, poate adauga o carte, poate modifica carti, poate creea conturi, modifica rolurile conturilor deja existente sau sterge conturi si poate vedea cererile de autori de la utilizatori normali
+- **Login Page(/login)**: pagina prin care utilizatorul poate intra in cont folosind mail-ul si parola, in plus acesta poate alege optiunea de "Am uitat parola" pentru a o schimba.
+- **Register Page(/register)**: Pagina prin care utilizatorul isi poate creea un cont nou. Se face regex pentru fromat mail
+
+
+## Functionalitati
+- Inregistrare si autentificare utilizator
+- Utilizatorii sunt conectati printr-un token se sesiune JWT
+- Roluri existente pentru utilizatori: User normal, Autor, Admin
+- Rolul de admin are drepturi de vizualizare a statisticilor, a sterge/modifica utilizatori si carti
+- Prezentarea datelor sub forma tabelara
+- Experienta UI/UX responsive 
 
 ## Sistem de fisiere
 ### Frontend
@@ -156,30 +213,6 @@ backend/
 └── package-lock.json
 ```
 
-## Modul de functionare
- // TO DO
-
-## Navigarea pe Site
-- **Pagina principala(/)**: Pe aceasta pagina utilizatorul poate vedea cartile recomandate pentru acesta, daca este logat. Daca nu este logat la un cont, acesta va vedea o lista cu toate cartile disponibile. Recomandarea de carti se face pe baza cartilor pe care le-a citit/vrea sa le citeasca
-- **Pagine de Browse(/browse)**: Pe aceasta pagina se pot observa toate cartile disponibile si se poate face filtrare dupa Nume/Autor/Gen/Numar pagini
-- **My Books(/myBooks)**: Aceasta pagina este disponibila doar utilizatorilor conectati. Aici se gasesc cartile pe care utilziatorul le are in colectie(Citite, le citeste sau le-a citit). Tot aici utilizatorul poate face o recenzie rapida pentru o carte anume, precum si editarea unei recenzii existente/adaugarea unei recenzii noi. Cartile din colectie pot fi filtrate dupa Data adaugata, data citita, recenzie, titlu sau autor.
-- **Pagina review carte(/editReview/:id)**: Aici se pot adauga sau modifica review-uri pentru o anumita carte. Se poate alege Rating, adauga recenzia (maxim 500 de litere), se poate marca drept spoiler si se pot alege date pentru inceput citire sau terminat citire.
-- **Pagina Carte(/book/:id)**: Se apasa pe o carte din Browse/Home si se afiseaza pagina cartii respective, unde se vad detalii despre carte, se poate da review, se pot filtra dupa stele daca se da click pe bara orizontala de la numarul de stele. In pluse se poate da click pe Gen, utilizatorul fiind redirectat la tab-ul de browse cu filtru pe genul selectat 
-- **Pagina profile(/profile)**: Pe pagina de profil, un utilizator isi poate schimba numele sau prenumele, adauga poza de profil, poate vizualiza email-ul si isi poate schimba parola. Mai exista si un tab de extra unde poate aplica sa fie autor
-- **Contact(/contact)**: ***De IMPLEMENTAT!***
-- **Author Dasboard(/authorDashboard)**: Pagina de author Dashboard poate fi accesata doar de utilizatori care au rol de autor si poate adauga o carte noua, modifica o carte, poate vizualiza statistici legate de cartile acestuia, si poate vedea notificarile primite, adica ce intrebari a primit de la alti utilizatori
-- **Admin Dashboard(/admin)**: Utilizatorul cu rol de admin poate vizualiza statistici legate de carti/review-uri, poate adauga o carte, poate modifica carti, poate creea conturi, modifica rolurile conturilor deja existente sau sterge conturi si poate vedea cererile de autori de la utilizatori normali
-- **Login Page(/login)**: pagina prin care utilizatorul poate intra in cont folosind mail-ul si parola, in plus acesta poate alege optiunea de "Am uitat parola" pentru a o schimba.
-- **Register Page(/register)**: Pagina prin care utilizatorul isi poate creea un cont nou. Se face regex pentru fromat mail
-
-
-## Functionalitati
-- Inregistrare si autentificare utilizator
-- Utilizatorii sunt conectati printr-un token se sesiune JWT
-- Roluri existente pentru utilizatori: User normal, Autor, Admin
-- Rolul de admin are drepturi de vizualizare a statisticilor, a sterge/modifica utilizatori si carti
-- Prezentarea datelor sub forma tabelara
-- Experienta UI/UX responsive 
 
 ## Tehnologii folosite
 
