@@ -12,6 +12,7 @@ BookReviewSite este o aplicație web concepută pentru recenziile de cărți, pe
     - [Backend](#backend)
     - [Frontend](#frontend)
   - [Exemplu navigare pagini](#exemplu-navigare-pagini)
+    - [Recomandare parcurgere site](#recomandare-parcurgere-site)
     - [Navigare utilizator neconectat](#navigare-utilizator-neconectat)
     - [Navigare utilizator simplu](#navigare-utilizator-simplu)
     - [Navigare utilizator autor](#navigare-utilizator-autor)
@@ -22,6 +23,7 @@ BookReviewSite este o aplicație web concepută pentru recenziile de cărți, pe
     - [Frontend](#frontend-1)
     - [Backend](#backend-1)
   - [Tehnologii folosite](#tehnologii-folosite)
+- [TO DO/Not working:](#to-donot-working)
 
 ## Descriere Proiect
 Acest proiect oferă un site dedicat recenziilor de cărți unde:
@@ -68,6 +70,11 @@ JWT_SECRET="o cheie anume" si MONGO_URI="mongodb://localhost:27017/review-books-
 Aplicatia se va lansa la adresa `http://localhost:5173`
 
 ## Exemplu navigare pagini
+  ### Recomandare parcurgere site
+  - Explorare functionalitati ca utilizator neconectat
+  - Explorare functionalitati ca utilizator simplu, cont: doru@gmail.com parola: 1
+  - Explorare functionalitati ca autor, cont: k@gmail.com, parola: 1234
+  - Explorare functionalitati ca admin, cont: admin@gmail.com, parola: 1
   ### Navigare utilizator neconectat
   - Utilizatorul neconectat poate accesa carti pentru a putea vizualiza descrierea si recenziile cartilor acestea
   - Acesta poate accesa site-urile autorilor si poate vedea intrebarile puse de alti utilizatori
@@ -236,3 +243,9 @@ backend/
 |                     | Dotenv                     | Gestionarea variabilelor de mediu în aplicație.    |
 |                     | Multer                     | Middleware pentru gestionarea încărcărilor de fișiere (ex: imagini). |
 
+# TO DO/Not working:
+- Fiind data doar partea de frontend nu am apucat sa implementez complet si functionalitatile de backend, asa ca unele aspecte legate de proiect nu merg asa cum as dori, aici sunt lucruri pe care trebuie sa le mai implementez
+- Sistem de notificari pentru cereri de autor
+- Poza de profil nu merge in totalitate sa fie upload din fisier
+- Mecanica din spatele de Recomandari de carti nu este implementata, asa ca Home arata toate cartile disponibile
+- Stergerea conturilor din tab-ul de admin pot provoca erori, astfel nu se recomanda

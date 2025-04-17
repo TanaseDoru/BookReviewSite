@@ -29,7 +29,7 @@ router.post('/register', async (req, res) => {
 
     // Corect: folosim newUser în loc de user
     const token = jwt.sign(
-      { userId: newUser._id, role: newUser.role, email: newUser.email },
+      { userId: user._id, firstName: user.firstName, lastName: user.lastName, role: user.role, email: user.email, authorId: user.authorId },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
