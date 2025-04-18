@@ -1,6 +1,7 @@
 // src/pages/MyBooks.jsx
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { fetchUserBooks, updateUserBook, fetchUserReviewForBook, saveReview } from "../utils/api";
 import Button from "../components/shared/Button";
 
@@ -29,7 +30,6 @@ const MyBooks = () => {
         const reviewPromises = books.map(async (book) => {
           try {
             const review = await fetchUserReviewForBook(book.bookId._id, token);
-            // A "meaningful" review has either a rating or a non-empty description
             const hasReview = !!(review && (review.rating || (review.description && review.description.trim() !== "")));
             return { bookId: book.bookId._id, hasReview, rating: review?.rating || null };
           } catch (err) {
@@ -117,7 +117,7 @@ const MyBooks = () => {
         navigate("/login");
         return;
       }
-  
+
       const reviewData = {
         rating: newRating,
         description: "",
@@ -125,12 +125,12 @@ const MyBooks = () => {
       };
       await saveReview(bookId, reviewData, token);
       await updateUserBook(bookId, { rating: newRating }, token);
-  
+
       setReviews((prev) => ({
         ...prev,
         [bookId]: { hasReview: true, rating: newRating },
       }));
-  
+
       setUserBooks(
         userBooks.map((book) =>
           book.bookId._id === bookId ? { ...book, rating: newRating } : book
@@ -150,7 +150,14 @@ const MyBooks = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <h1 className="text-3xl font-bold text-white mb-6">Cartile Mele</h1>
+      <motion.h1
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="text-3xl font-bold text-white mb-6"
+      >
+        Cartile Mele
+      </motion.h1>
 
       {/* Bookshelves Tabs */}
       <div className="mb-6">
@@ -226,8 +233,14 @@ const MyBooks = () => {
             </tr>
           </thead>
           <tbody>
-            {sortedBooks.map((book) => (
-              <tr key={book._id} className="border-b border-gray-700 hover:bg-gray-600">
+            {sortedBooks.map((book, index) => (
+              <motion.tr
+                key={book._id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                className="border-b border-gray-700 hover:bg-gray-600"
+              >
                 <td className="p-4">
                   {book.bookId.coverImage ? (
                     <img
@@ -281,7 +294,7 @@ const MyBooks = () => {
                 <td className="p-4">
                   {book.dateRead ? new Date(book.dateRead).toLocaleDateString() : "—"}
                 </td>
-              </tr>
+              </motion.tr>
             ))}
           </tbody>
         </table>

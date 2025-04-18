@@ -15,7 +15,8 @@ const NavBar = () => {
     { name: 'Browse', route: '/browse' },
     { name: 'My Books', route: '/myBooks' },
     ...(user && user.role === 'admin' ? [{ name: 'Admin', route: '/admin' }] : []),
-    ...(user && user.role === 'author' ? [{ name: 'Author Dashboard', route: `/authorDashboard` }] : [])
+    ...(user && user.role === 'author' ? [{ name: 'Author Dashboard', route: `/authorDashboard` }] : []),
+    { name: 'Contact', route: '/contact' },
   ];
 
   const handleLogout = () => {

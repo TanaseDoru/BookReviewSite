@@ -9,10 +9,10 @@ import MyBooks from '../pages/MyBooks';
 import Profile from '../pages/Profile';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
-import EditReview from "../pages/EditReview"; // Import EditRev
+import EditReview from "../pages/EditReview"; 
 import AdminPage from '../pages/AdminPage';
-import AuthorDashboard from '../pages/AuthorDashboard'; // Import AuthorDashboard
-
+import AuthorDashboard from '../pages/AuthorDashboard'; 
+import Contact from '../pages/Contact';
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -28,7 +28,8 @@ export const router = createBrowserRouter([
       { path: '/register', element: <Register /> },
       { path: "/editReview/:bookId", element: <EditReview /> },
       { path: "/admin", element: <AdminPage /> }, 
-      { path: "/authorDashboard", element: <AuthorDashboard /> }, // Add AuthorDashboard route
+      { path: "/authorDashboard", element: <AuthorDashboard /> }, 
+      { path: "/contact", element: <Contact /> }, 
     ],
   },
 ]);

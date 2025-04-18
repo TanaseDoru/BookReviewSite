@@ -73,7 +73,7 @@ Aplicatia se va lansa la adresa `http://localhost:5173`
 
 ### Baza de date
 - In primul rand trebuie instalat `mongod` pentru a putea folosi si crea baza de date
-- **Windows:** https://www.mongodb.com/try/download/community
+- **Windows:** https://www.mongodb.com/try/download/community + trebuie pus directorul **bin** in **PATH** din variabila de mediu
 - **Arch:** 
 ```bash
   yay -S mongodb
@@ -82,7 +82,7 @@ Aplicatia se va lansa la adresa `http://localhost:5173`
   ```bash
   mongod --port 27017 --dbpath database-dump/
   ```
-- **Alternativ**, daca nu functioneaza din dump, trebuie introdus manual fiecare json din directorul database-jsons
+- **Alternativ**, daca nu functioneaza din dump, sau daca baza de date nu contine elemente trebuie introdus manual fiecare json din directorul database-jsons
 
 ## Exemplu navigare pagini
   ### Recomandare parcurgere site
