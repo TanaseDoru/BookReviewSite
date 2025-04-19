@@ -260,12 +260,12 @@ const MyBooks = () => {
                 <td className="p-4">{book.bookId.author}</td>
                 <td className="p-4">{book.bookId.avgRating.toFixed(2) || "—"}</td>
                 <td className="p-4 flex gap-2 items-center">
-                  <button
-                    className="buttonStyle bg-blue-500 hover:bg-blue-600 text-sm"
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
                     onClick={() => navigate(`/editReview/${book.bookId._id}`)}
                   >
                     {reviews[book.bookId._id]?.hasReview ? "Modifica Recenzia" : "Scrie o Recenzie"}
-                  </button>
+                  </Button>
                   <select
                     value={reviews[book.bookId._id]?.rating || ""}
                     onChange={(e) => handleRatingChange(book.bookId._id, parseInt(e.target.value))}
