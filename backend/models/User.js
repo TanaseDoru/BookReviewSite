@@ -24,3 +24,5 @@ const userSchema = new mongoose.Schema({
 
 // Ensure the model name matches the collection name in the database
 module.exports = mongoose.model("User", userSchema);
+
+

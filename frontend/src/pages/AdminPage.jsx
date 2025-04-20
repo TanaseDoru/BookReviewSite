@@ -446,10 +446,32 @@ const AdminPage = () => {
     }
   };
 
-  const handleApproveRequest = async (requestId, authorId) => {
+  const handleApproveRequest = async (requestId) => {
     try {
       const token = localStorage.getItem('token');
-      await approveAuthorRequest(requestId, authorId, token);
+      // Găsim notificarea pentru a obține datele utilizatorului
+      const request = authorRequests.find((req) => req._id === requestId);
+      if (!request) {
+        throw new Error('Cererea nu a fost găsită.');
+      }
+  
+      // Creăm un cont de autor cu numele utilizatorului
+      const authorData = {
+        name: `${request.userId.firstName} ${request.userId.lastName}`,
+        picture: '', // Imaginea va fi completată ulterior, dacă e nevoie
+        isAlive: true,
+        genres: [],
+        description: '',
+      };
+      const newAuthor = await addAuthor(authorData, token);
+  
+      // Actualizăm utilizatorul: setăm rolul 'author' și asociem authorId
+      await updateUserRole(request.userId._id, 'author', token);
+  
+      // Actualizăm starea notificării la 'accepted'
+      await approveAuthorRequest(requestId, newAuthor._id, token);
+  
+      // Eliminăm cererea din listă
       setAuthorRequests(authorRequests.filter((req) => req._id !== requestId));
       alert('Cerere de autor aprobată!');
     } catch (error) {
@@ -457,7 +479,7 @@ const AdminPage = () => {
       alert('Eroare la aprobarea cererii.');
     }
   };
-
+  
   const handleRejectRequest = async (requestId) => {
     try {
       const token = localStorage.getItem('token');
@@ -1127,11 +1149,10 @@ const AdminPage = () => {
                     >
                       <p><span className="font-semibold">Utilizator:</span> {req.userId.firstName} {req.userId.lastName}</p>
                       <p><span className="font-semibold">Email:</span> {req.userId.email}</p>
-                      <p><span className="font-semibold">Autor solicitat:</span> {req.authorName}</p>
-                      <p><span className="font-semibold">Motivație:</span> {req.reason}</p>
+                      <p><span className="font-semibold">Motivație:</span> {req.details}</p>
                       <div className="mt-2 flex gap-2">
                         <button
-                          onClick={() => handleApproveRequest(req._id, req.authorId)}
+                          onClick={() => handleApproveRequest(req._id)}
                           className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
                         >
                           Aprobă

@@ -4,6 +4,7 @@ const Book = require('../models/Book');
 const Author = require('../models/Author');
 const Review = require('../models/Review');
 const User = require('../models/User');
+const Notification = require('../models/Notifications'); // Import the Notification model
 const authMiddleware = require('../middleware/auth');
 const errorHandler = require('../utils/errorHandler');
 
@@ -59,14 +60,13 @@ router.get('/stats', authMiddleware, async (req, res) => {
 });
 
 // Adăugare carte
-router.post('/books', authMiddleware, async (req, res) => {
+router.post('/books', async (req, res) => {
   try {
     if (req.user.role !== 'admin' && req.user.role !== 'author') {
       return res.status(403).json({ message: 'Admin or Author role required. Your role is: ' + req.user.role });
     }
 
     const { title, authorId, genres, pages, coverImage, description } = req.body;
-
 
     // Verificăm dacă authorId este valid
     if (!mongoose.isValidObjectId(authorId)) {
@@ -75,13 +75,12 @@ router.post('/books', authMiddleware, async (req, res) => {
 
     const newBook = new Book({
       title,
-      authorId: authorId, // Folosim authorId în loc de author
+      authorId,
       genres,
       pages,
       coverImage,
       description,
     });
-    console.log('Adding Book: ', newBook);
     await newBook.save();
     const populatedBook = await Book.findById(newBook._id).populate('authorId');
     res.status(201).json(populatedBook);
@@ -91,7 +90,7 @@ router.post('/books', authMiddleware, async (req, res) => {
 });
 
 // Adăugare autor
-router.post('/authors', authMiddleware, async (req, res) => {
+router.post('/authors', async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
@@ -178,10 +177,19 @@ router.get('/author-requests', authMiddleware, async (req, res) => {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
     }
-    const requests = await User.find({ role: 'user', authorId: { $exists: true } })
-      .populate('authorId', 'name')
-      .select('firstName lastName email authorId');
-    res.json(requests);
+
+    // Fetch notifications with status 'pending' and populate user and author details
+    const requests = await Notification.find({ status: 'pending' })
+      .populate('userId', 'firstName lastName email')
+      .select('userId authorId details');
+
+    const formattedRequests = requests.map(request => ({
+      _id: request._id,
+      userId: request.userId,
+      details: request.details,
+    }));
+
+    res.json(formattedRequests);
   } catch (error) {
     errorHandler(res, error, 'Error fetching author requests');
   }
@@ -193,32 +201,55 @@ router.post('/author-requests/:id/approve', authMiddleware, async (req, res) => 
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
     }
-    const { authorId } = req.body;
-    const user = await User.findById(req.params.id);
+
+    const notification = await Notification.findById(req.params.id);
+    if (!notification) {
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+
+    // Update the user's role to 'author'
+    const user = await User.findById(notification.userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+
     user.role = 'author';
-    user.authorId = authorId;
+    user.authorId = req.body.authorId;;
     await user.save();
-    res.json(user);
+
+    // Update the notification status to 'accepted'
+    notification.status = 'accepted';
+    await notification.save();
+
+    res.json({ message: 'Author request approved', user });
   } catch (error) {
     errorHandler(res, error, 'Error approving author request');
   }
 });
 
 // Respingere cerere pentru a deveni autor
-router.delete('/author-requests/:id/reject', authMiddleware, async (req, res) => {
+router.delete('/author-requests/:id/reject', async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
     }
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+
+    const notification = await Notification.findById(req.params.id);
+    if (!notification) {
+      return res.status(404).json({ message: 'Notification not found' });
     }
-    user.authorId = undefined;
-    await user.save();
+
+    // Update the notification status to 'denied'
+    notification.status = 'denied';
+    await notification.save();
+
+    // Optionally, remove the authorId from the user
+    const user = await User.findById(notification.userId);
+    if (user) {
+      user.authorId = undefined;
+      await user.save();
+    }
+
     res.json({ message: 'Author request rejected' });
   } catch (error) {
     errorHandler(res, error, 'Error rejecting author request');
@@ -250,17 +281,31 @@ router.put('/authors/:id/updateName', authMiddleware, async (req, res) => {
   }
 });
 
+// Delete user
 router.delete('/users/:id', async (req, res) => {
-  const userId = req.params.id;
-  const user = await User.findById(userId);
-  if (user.role === 'author') {
-    const books = await Book.find({ authorId: user.authorId });
-    const bookIds = books.map(book => book._id);
-    await Review.deleteMany({ bookId: { $in: bookIds } });
-    await Book.deleteMany({ authorId: user.authorId });
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
+    }
+
+    const userId = req.params.id;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.role === 'author') {
+      const books = await Book.find({ authorId: user.authorId });
+      const bookIds = books.map(book => book._id);
+      await Review.deleteMany({ bookId: { $in: bookIds } });
+      await Book.deleteMany({ authorId: user.authorId });
+    }
+
+    await User.deleteOne({ _id: userId });
+    res.status(200).json({ message: 'User deleted' });
+  } catch (error) {
+    errorHandler(res, error, 'Error deleting user');
   }
-  await User.deleteOne({ _id: userId });
-  res.status(200).json({ message: 'User deleted' });
 });
 
 module.exports = router;

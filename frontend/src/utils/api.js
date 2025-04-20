@@ -31,6 +31,7 @@ const apiRequest = async (endpoint, method = "GET", body = null, token = null) =
   }
 };
 
+// Existing API functions...
 export const login = (email, password) =>
   apiRequest('/auth/login', 'POST', { email, password });
 
@@ -74,7 +75,6 @@ export const uploadProfilePicture = (file, token) => {
   formData.append('profilePicture', file);
   return apiRequest('/profile/upload-picture', 'POST', formData, token);
 };
-
 
 export const fetchUserReviewForBook = (bookId, token) =>
   apiRequest(`/reviews/user/book/${bookId}`, "GET", null, token);
@@ -127,7 +127,6 @@ export const rejectAuthorRequest = (requestId, token) =>
 export const updateBook = (bookId, updatedData, token) =>
   apiRequest(`/books/${bookId}`, 'PUT', updatedData, token);
 
-
 // Fetch questions by author ID
 export const fetchQuestionsByAuthorId = async (authorId) => {
   return apiRequest(`/questions/${authorId}`);
@@ -138,7 +137,7 @@ export const askQuestion = async (authorId, questionText, token) => {
   return apiRequest(`/questions/ask/${authorId}`, "POST", { questionText }, token);
 };
 
-//Fetch userName from id
+// Fetch userName from id
 export const fetchUserNameById = async (userId) => {
   return apiRequest(`/users/${userId}`);
 };
@@ -147,3 +146,16 @@ export const fetchUserNameById = async (userId) => {
 export const answerQuestion = async (questionId, answerText, token) => {
   return apiRequest(`/questions/answer/${questionId}`, "PUT", { answerText }, token);
 };
+
+export const updateAuthorPicture = (authorId, picture, token) =>
+  apiRequest(`/authors/${authorId}`, 'PUT', { picture }, token);
+
+export const createAuthorRequest = (userId, details, token) =>
+  apiRequest('/notifications', 'POST', { userId, details }, token);
+
+// New function to check pending author request
+export const checkAuthorRequest = async (token) =>
+  apiRequest('/notifications/check', 'GET', null, token);
+
+export const fetchMyAuthorRequests = (token) =>
+  apiRequest('/notifications/my-notifications', 'GET', null, token);

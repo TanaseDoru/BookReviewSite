@@ -1,10 +1,11 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { updateAuthorName, updateProfileName, updateProfilePassword, uploadProfilePicture } from '../utils/api';
+import { updateAuthorName, updateProfileName, updateProfilePassword, uploadProfilePicture, createAuthorRequest, checkAuthorRequest, fetchMyAuthorRequests, addAuthor, updateAuthorPicture } from '../utils/api';
 import Button from '../components/shared/Button';
 import blankProfile from '../assets/blankProfile.png';
 import { AuthContext } from '../context/AuthContext';
+import { Navigate } from 'react-router-dom';
 
 const Profile = () => {
   const { user, setUser } = useContext(AuthContext);
@@ -15,13 +16,43 @@ const Profile = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [error, setError] = useState('');
   const [notification, setNotification] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Pentru meniu colapsabil pe mobil
-  const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [authorRequestReason, setAuthorRequestReason] = useState('');
+  const [requestStatus, setRequestStatus] = useState('');
 
   if (!user) {
-    navigate('/login');
-    return null;
+    return <Navigate to="/login" replace />;
   }
+
+  useEffect(() => {
+    if (activeTab === 'extra' && user.role !== 'author') {
+      const checkPending = async () => {
+        try {
+          if(requestStatus === '')
+          {
+            const token = localStorage.getItem('token');
+            const notification  = await checkAuthorRequest(token);
+            if(notification.hasRequest === false)
+            {
+              setRequestStatus('');
+            }
+            else
+            {
+              setRequestStatus(notification.status);
+
+            }
+          }
+        } catch (error) {
+          console.error('Error checking author request:', error);
+          setNotification('Eroare la verificarea cererii de autor.');
+        }
+      };
+      checkPending();
+    }
+  }, [activeTab, requestStatus, user]);
+
+  
+  
 
   const handleProfilePictureUpload = async (e) => {
     const file = e.target.files[0];
@@ -34,14 +65,7 @@ const Profile = () => {
       setUser(updatedUser);
 
       if (user.role === 'author') {
-        await fetch(`http://localhost:3000/api/authors/${user._id}`, {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ picture: data.profilePicture }),
-        });
+        await updateAuthorPicture(user.authorId, data.profilePicture, token);
       }
     } catch (error) {
       console.error('Error uploading profile picture:', error);
@@ -87,11 +111,24 @@ const Profile = () => {
     }
   };
 
-  const handleAuthorRequest = () => {
-    setNotification('DE IMPLEMENTAT SISTEMUL DE NOTIFICARI');
+  const handleAuthorRequest = async () => {
+    if (!authorRequestReason.trim()) {
+      setNotification('Te rugăm să introduci un motiv pentru cererea ta.');
+      return;
+    }
+  
+    try {
+      const token = localStorage.getItem('token');
+      await createAuthorRequest(user._id, authorRequestReason, token);
+      setNotification('Cererea ta a fost trimisă cu succes! Vei fi notificat când va fi procesată.');
+      setAuthorRequestReason('');
+      setRequestStatus('pending'); 
+    } catch (error) {
+      console.error('Error sending author request:', error);
+      setNotification('Eroare la trimiterea cererii. Te rugăm să încerci din nou. ' + error.message);
+    }
   };
 
-  // Variante pentru animații
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
@@ -131,7 +168,7 @@ const Profile = () => {
         </div>
       </motion.div>
 
-      {/* Overlay pentru fundal pe mobil când sidebar-ul este deschis */}
+      {/* Overlay pentru mobil */}
       {isSidebarOpen && (
         <motion.div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
@@ -142,7 +179,7 @@ const Profile = () => {
         ></motion.div>
       )}
 
-      {/* Buton pentru a deschide meniul pe mobil */}
+      {/* Buton pentru meniu pe mobil */}
       <motion.button
         onClick={() => setIsSidebarOpen(true)}
         className="md:hidden fixed top-16 right-4 z-[60] p-3 bg-blue-600 rounded-lg text-white text-2xl focus:outline-none shadow-lg"
@@ -326,16 +363,40 @@ const Profile = () => {
                 </Link>
               </div>
             ) : (
-              <div>
-                <Button
-                  onClick={handleAuthorRequest}
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg w-full md:w-auto"
-                >
-                  Trimite cerere de autor
-                </Button>
+              <div className="space-y-4">
+                {requestStatus === 'pending' ? (
+                  <p className="text-yellow-500">
+                    Cererea de autor este procesată și în așteptare.
+                  </p>
+                ) : requestStatus === 'denied' ? (
+                  <p className="text-red-500">
+                    Cererea dumneavoastră a fost respinsă.
+                  </p>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block mb-1 text-gray-300">
+                        Motivul pentru care vrei să devii autor
+                      </label>
+                      <textarea
+                        value={authorRequestReason}
+                        onChange={(e) => setAuthorRequestReason(e.target.value)}
+                        placeholder="Explică de ce dorești să devii autor..."
+                        className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 h-32 resize-none"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleAuthorRequest}
+                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg w-full md:w-auto"
+                    >
+                      Trimite cerere de autor
+                    </Button>
+                  </>
+                )}
+
                 {notification && (
                   <motion.p
-                    className="text-yellow-500 mt-4"
+                    className={notification.includes('Eroare') ? 'text-red-500' : 'text-green-500'}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3 }}
