@@ -8,9 +8,13 @@ import {
   addAuthor,
   fetchUsers,
   updateUserRole,
+  fetchBookRequests,
+  rejectBookRequest,
   fetchAuthorRequests,
   approveAuthorRequest,
   rejectAuthorRequest,
+  approveBookRequest,
+  fetchAuthorById,
   fetchAuthorByName,
   fetchBooks,
   updateBook,
@@ -120,6 +124,36 @@ const AdminPage = () => {
     loadUsers();
     loadAuthorRequests();
   }, [user, navigate]);
+
+  const [bookRequests, setBookRequests] = useState([]);
+  const [bookAuthorNames, setBookAuthorNames] = useState({});
+  useEffect(() => {
+    if (activeTab === 'notifications') {
+      const token = localStorage.getItem('token');
+
+      fetchBookRequests(token)
+        .then(async (data) => {
+          setBookRequests(data);
+
+          // Preia numele autorilor
+          const ids = [...new Set(data.map((r) => r.payload.authorId).filter(Boolean))];
+          console.log('Book ids:', ids);
+          const names = {};
+          for (const id of ids) {
+            try {
+              const author = await fetchAuthorById(id, token);
+              console.log('Author:', author);
+              names[id] = author.author.name;
+            } catch {
+              names[id] = 'Autor necunoscut';
+            }
+          }
+          setBookAuthorNames(names);
+        })
+        .catch(console.error);
+    }
+  }, [activeTab]);
+  
 
   // Load books when edit tab is opened
   useEffect(() => {
@@ -313,6 +347,30 @@ const AdminPage = () => {
       alert('Eroare la adăugarea cărții.');
     }
   };
+
+  const handleApproveBookRequest = async (requestId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await approveBookRequest(requestId, token);
+      setBookRequests(bookRequests.filter((req) => req._id !== requestId));
+    }
+    catch (error) {
+      console.error('Eroare la aprobarea cererii de carte:', error);
+      alert('Eroare la aprobarea cererii de carte.');
+    }
+
+  }
+
+  const handleRejectBookRequest = async (requestId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await rejectBookRequest(requestId, token);
+      setBookRequests(bookRequests.filter((req) => req._id !== requestId));
+    } catch (error) {
+      console.error('Eroare la respingerea cererii de carte:', error);
+      alert('Eroare la respingerea cererii de carte.');
+    }
+  }
 
   const handleEditBookSubmit = async (e) => {
     e.preventDefault();
@@ -1033,17 +1091,7 @@ const AdminPage = () => {
                   <option value="false">Nu</option>
                 </select>
               </motion.div>
-              {!authorForm.isAlive && (
-                <motion.div variants={itemVariants}>
-                  <label className="block mb-1">Data decesului:</label>
-                  <input
-                    type="date"
-                    value={authorForm.died}
-                    onChange={(e) => setAuthorForm({ ...authorForm, died: e.target.value })}
-                    className="w-full p-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </motion.div>
-              )}
+              
               <motion.div variants={itemVariants}>
                 <label className="block mb-1">Genuri (separate prin virgulă):</label>
                 <input
@@ -1161,33 +1209,68 @@ const AdminPage = () => {
           >
             <h2 className="text-2xl font-semibold mb-4">Notificări</h2>
             <div className="space-y-4">
-              <h3 className="text-xl font-semibold">Cereri de autor</h3>
-              {authorRequests.length === 0 ? (
-                <p className="text-gray-400">Nu există cereri de autor în așteptare.</p>
+              {(authorRequests.length + bookRequests.length) === 0 ? (
+                <p className="text-gray-400">Nu există cereri în așteptare.</p>
               ) : (
                 <div className="space-y-4">
+                  {/* Cereri de autor */}
                   {authorRequests.map((req) => (
                     <motion.div
                       key={req._id}
                       className="bg-gray-700 p-4 rounded-lg"
                       variants={itemVariants}
                     >
-                      <p><span className="font-semibold">Utilizator:</span> {req.userId.firstName} {req.userId.lastName}</p>
-                      <p><span className="font-semibold">Email:</span> {req.userId.email}</p>
-                      <p><span className="font-semibold">Motivație:</span> {req.details}</p>
+                      <p><strong>Utilizator:</strong> {req.userId.firstName} {req.userId.lastName}</p>
+                      <p><strong>Email:</strong> {req.userId.email}</p>
+                      <p><strong>Motivație:</strong> {req.details}</p>
                       <div className="mt-2 flex gap-2">
-                        <button
+                        <Button
                           onClick={() => handleApproveRequest(req._id)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
                         >
                           Aprobă
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => handleRejectRequest(req._id)}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
                         >
                           Respinge
-                        </button>
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ))}
+
+                  {/* Cereri de carte */}
+                  {bookRequests.map((req) => (
+                    <motion.div key={req._id} className="bg-gray-700 p-4 rounded-lg" variants={itemVariants}>
+                      <p><strong>Tip cerere:</strong> {req.requestType}</p>
+                      <p><strong>Titlu:</strong> {req.payload.title}</p>
+                      <p><strong>Autor:</strong> {bookAuthorNames[req.payload.authorId]}</p>
+                      <p><strong>Descriere:</strong> {req.payload.description}</p>
+                      {req.payload.coverImage && (
+                        <div className="mt-2">
+                          <p className="text-gray-400 mb-1">Previzualizare copertă:</p>
+                          <img
+                            src={req.payload.coverImage}
+                            alt="Previzualizare copertă"
+                            className=" h-auto rounded-lg object-contain max-w-3xs"
+                          />
+                        </div>
+                      )}
+
+                      <div className="mt-4 flex gap-2">
+                        <Button
+                          onClick={() => handleApproveBookRequest(req._id)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Aprobă
+                        </Button>
+                        <Button
+                          onClick={() => handleRejectBookRequest(req._id)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+                        >
+                          Respinge
+                        </Button>
                       </div>
                     </motion.div>
                   ))}
@@ -1196,6 +1279,9 @@ const AdminPage = () => {
             </div>
           </motion.section>
         )}
+
+
+
       </div>
     </div>
   );

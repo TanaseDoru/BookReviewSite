@@ -7,6 +7,7 @@ import {
   updateBook,
   fetchQuestionsByAuthorId,
   answerQuestion,
+  createBookRequest,
   fetchUserNameById,
 } from '../utils/api';
 import { AuthContext } from '../context/AuthContext';
@@ -84,11 +85,14 @@ const AuthorDashboard = () => {
       const bookToAdd = {
         ...newBook,
         authorId: user.authorId,
-        genres: newBook.genres.split(',').map((genre) => genre.trim()),
-        pages: parseInt(newBook.pages),
+        genres: newBook.genres.split(',').map((g) => g.trim()),
+        pages: parseInt(newBook.pages, 10),
       };
-      const response = await addBook(bookToAdd, token);
-      setBooks([...books, response]);
+      // trimitem o cerere de creare carte
+      await createBookRequest(
+        { requestType: 'create', payload: bookToAdd },
+        token
+      );
       setNewBook({
         title: '',
         genres: '',
@@ -96,10 +100,10 @@ const AuthorDashboard = () => {
         description: '',
         coverImage: '',
       });
-      alert('Cartea a fost adăugată cu succes!');
+      alert('Cererea de adăugare carte a fost trimisă cu succes!');
     } catch (error) {
-      console.error('Eroare la adăugarea cărții:', error);
-      alert('Eroare la adăugarea cărții.');
+      console.error('Eroare la trimiterea cererii de adăugare:', error);
+      alert('Eroare la trimiterea cererii de adăugare a cărții.');
     }
   };
 
@@ -138,23 +142,25 @@ const AuthorDashboard = () => {
 
   const handleSubmitBookChanges = async (bookId) => {
     const token = localStorage.getItem('token');
+    const updatedData = modifiedBooks[bookId];
+    if (!updatedData) {
+      return alert('Nu există modificări de trimis');
+    }
     try {
-      const updatedData = modifiedBooks[bookId];
-      if (!updatedData) {
-        alert('Nu există modificări de trimis');
-        return;
-      }
-      const updatedBook = await updateBook(bookId, updatedData, token);
-      setBooks(books.map((b) => (b._id === bookId ? updatedBook : b)));
+      // trimitem o cerere de modificare carte
+      await createBookRequest(
+        { requestType: 'update', bookId, payload: updatedData },
+        token
+      );
       setModifiedBooks((prev) => {
-        const newModified = { ...prev };
-        delete newModified[bookId];
-        return newModified;
+        const next = { ...prev };
+        delete next[bookId];
+        return next;
       });
-      alert('Cartea a fost modificată cu succes!');
+      alert('Cererea de modificare carte a fost trimisă cu succes!');
     } catch (error) {
-      console.error('Eroare la modificarea cărții:', error);
-      alert('Eroare la modificarea cărții.');
+      console.error('Eroare la trimiterea cererii de modificare:', error);
+      alert('Eroare la trimiterea cererii de modificare a cărții.');
     }
   };
 

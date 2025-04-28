@@ -167,3 +167,19 @@ export const updateUserActiveStatus = async (userId, isActive, token) => {
 export const getUserIdByAuthorId = async (authorId) => {
   return apiRequest(`/users/getUserByAuthorId/${authorId}`);
 };
+
+// Funcții BookRequest
+export const fetchBookRequests = (token) =>
+  {return apiRequest('/book-requests', 'GET', null, token);};
+
+export const fetchMyBookRequests = (token) =>
+  apiRequest('/book-requests/my', 'GET', null, token);
+
+export const createBookRequest = (data, token) =>
+  apiRequest('/book-requests', 'POST', data, token);
+
+export const approveBookRequest = (id, token) =>
+  apiRequest(`/book-requests/${id}/approve`, 'PUT', null, token);
+
+export const rejectBookRequest = (id, token) =>
+  apiRequest(`/book-requests/${id}/reject`, 'PUT', null, token);

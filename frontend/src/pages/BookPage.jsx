@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
 import {
   fetchBookById,
-  fetchAuthorByName,
   addUserBook,
   fetchUserBooks,
   updateUserBook,

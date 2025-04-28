@@ -22,6 +22,7 @@ app.use('/api/admin', require('./routes/admin')); // Mount admin routes
 app.use('/api/questions', require('./routes/questions')); // Mount questions routes
 app.use('/api/users', require('./routes/users')); // Mount users routes
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/book-requests', require('./routes/bookRequests')); // Mount book requests routes
 
 // Start server
 const startServer = async () => {
