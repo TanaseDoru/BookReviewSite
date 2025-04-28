@@ -15,6 +15,7 @@ import {
   fetchBooks,
   updateBook,
   fetchBookById,
+  updateUserActiveStatus,
 } from '../utils/api';
 import { optimizeAndConvertToBase64, getBase64Size } from '../utils/imageUtils';
 import Button from '../components/shared/Button';
@@ -135,6 +136,19 @@ const AdminPage = () => {
       setBooks(data);
     } catch (error) {
       console.error('Eroare la încărcarea cărților:', error);
+    }
+  };
+
+  const handleToggleActive = async (userId, currentStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      const newStatus = !currentStatus; // Inversează starea curentă
+      await updateUserActiveStatus(userId, newStatus, token); // Funcție nouă din api.js
+      setUsers(users.map((u) => (u._id === userId ? { ...u, isActive: newStatus } : u)));
+      alert(`Utilizatorul a fost ${newStatus ? 'activat' : 'dezactivat'} cu succes!`);
+    } catch (error) {
+      console.error('Eroare la actualizarea stării utilizatorului:', error);
+      alert('Eroare la actualizarea stării utilizatorului.');
     }
   };
 
@@ -385,7 +399,7 @@ const AdminPage = () => {
     if (window.confirm('Ești sigur că vrei să ștergi acest utilizator?')) {
       try {
         const token = localStorage.getItem('token');
-        await apiRequest(`/admin/users/${userId}`, 'DELETE', null, token);
+        updateUserActiveStatus(userId, false, token);
         setUsers(users.filter((u) => u._id !== userId));
         alert('Utilizator șters cu succes!');
       } catch (error) {
@@ -1091,6 +1105,7 @@ const AdminPage = () => {
                       <th className="px-4 py-2 text-left">Nume</th>
                       <th className="px-4 py-2 text-left">Email</th>
                       <th className="px-4 py-2 text-left">Rol</th>
+                      <th className="px-4 py-2 text-left">Stare</th>
                       <th className="px-4 py-2 text-left">Acțiuni</th>
                     </tr>
                   </thead>
@@ -1100,6 +1115,7 @@ const AdminPage = () => {
                         <td className="px-4 py-2">{u.firstName} {u.lastName}</td>
                         <td className="px-4 py-2">{u.email}</td>
                         <td className="px-4 py-2">{u.role}</td>
+                        <td className="px-4 py-2">{u.isActive ? 'Activ' : 'Dezactivat'}</td>
                         <td className="px-4 py-2">
                           <select
                             value={u.role}
@@ -1110,12 +1126,21 @@ const AdminPage = () => {
                             <option value="author">Autor</option>
                             <option value="admin">Admin</option>
                           </select>
-                          <button
-                            onClick={() => handleDeleteUser(u._id)}
-                            className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-sm"
-                          >
-                            Șterge
-                          </button>
+                          {u.isActive ? (
+                            <button
+                              onClick={() => handleToggleActive(u._id, u.isActive)}
+                              className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-sm"
+                            >
+                              Dezactivează
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleToggleActive(u._id, u.isActive)}
+                              className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-sm"
+                            >
+                              Activează
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}

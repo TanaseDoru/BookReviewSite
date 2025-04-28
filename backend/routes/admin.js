@@ -120,7 +120,7 @@ router.get('/users', authMiddleware, async (req, res) => {
     }
     const { email } = req.query;
     const query = email ? { email: new RegExp(email, 'i') } : {};
-    const users = await User.find(query).select('firstName lastName email role');
+    const users = await User.find(query).select('firstName lastName email role isActive');
     res.json(users);
   } catch (error) {
     errorHandler(res, error, 'Error fetching users');
@@ -281,30 +281,28 @@ router.put('/authors/:id/updateName', authMiddleware, async (req, res) => {
   }
 });
 
-// Delete user
-router.delete('/users/:id', async (req, res) => {
+router.put('/users/:id/isActive', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin role required. Your role is: ' + req.user.role });
+      return res.status(403).json({ message: 'Admin role required' });
     }
 
-    const userId = req.params.id;
-    const user = await User.findById(userId);
+    const { isActive } = req.body;
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({ message: 'Invalid isActive value' });
+    }
+
+    const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (user.role === 'author') {
-      const books = await Book.find({ authorId: user.authorId });
-      const bookIds = books.map(book => book._id);
-      await Review.deleteMany({ bookId: { $in: bookIds } });
-      await Book.deleteMany({ authorId: user.authorId });
-    }
+    user.isActive = isActive;
+    await user.save();
 
-    await User.deleteOne({ _id: userId });
-    res.status(200).json({ message: 'User deleted' });
+    res.json({ message: `User ${isActive ? 'activated' : 'deactivated'} successfully`, user });
   } catch (error) {
-    errorHandler(res, error, 'Error deleting user');
+    errorHandler(res, error, 'Error updating user active status');
   }
 });
 

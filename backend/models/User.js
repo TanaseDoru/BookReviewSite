@@ -20,9 +20,11 @@ const userSchema = new mongoose.Schema({
       return this.role === "author"; // Required only if role is "author"
     },
   },
+  isActive: {
+    type: Boolean,
+    default: true, // Utilizatorul este activ implicit
+  },
 });
 
 // Ensure the model name matches the collection name in the database
 module.exports = mongoose.model("User", userSchema);
-
-

@@ -48,7 +48,12 @@ const Login = () => {
       alert(`Bine ai venit, ${data.user.firstName}!`);
       navigate('/');
     } catch (error) {
-      setError(error.message || 'Email sau parolă incorectă');
+      // Verificăm mesajul specific pentru cont dezactivat
+      if (error.message === 'Account deactivated') {
+        setError('Contul este dezactivat. Ne pare rau.');
+      } else {
+        setError(error.message || 'Email sau parolă incorectă');
+      }
     }
   };
 

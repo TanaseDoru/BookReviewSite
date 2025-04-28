@@ -159,3 +159,7 @@ export const checkAuthorRequest = async (token) =>
 
 export const fetchMyAuthorRequests = (token) =>
   apiRequest('/notifications/my-notifications', 'GET', null, token);
+
+export const updateUserActiveStatus = async (userId, isActive, token) => {
+  return apiRequest(`/admin/users/${userId}/isActive`, 'PUT', { isActive }, token);
+};

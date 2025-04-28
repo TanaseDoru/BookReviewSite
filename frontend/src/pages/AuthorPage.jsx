@@ -6,18 +6,17 @@ import { AuthContext } from '../context/AuthContext';
 
 const AuthorPage = () => {
   const { id } = useParams();
-  const { user, setUser } = useContext(AuthContext); // Contextul pentru utilizator
+  const { user } = useContext(AuthContext); // Contextul pentru utilizator
   const [author, setAuthor] = useState(null);
   const [books, setBooks] = useState([]);
   const [questions, setQuestions] = useState([]);
-  const [usernames, setUsernames] = useState({}); // Starea pentru username-uri, indexate după userId
+  const [usernames, setUsernames] = useState({});
   const [showQuestionForm, setShowQuestionForm] = useState(false);
-  const [showAnswerForm, setShowAnswerForm] = useState(null); // State pentru afișarea formularului de răspuns
+  const [showAnswerForm, setShowAnswerForm] = useState(null);
   const [questionText, setQuestionText] = useState('');
-  const [answerText, setAnswerText] = useState(''); // State pentru textul răspunsului
+  const [answerText, setAnswerText] = useState('');
   const navigate = useNavigate();
   const isLoggedIn = !!localStorage.getItem('token');
-  // Verific dacă utilizatorul este autorul curent (presupunem că author.id este identic cu user.userId)
   const isAuthor = user && author && user.authorId === author._id;
 
   useEffect(() => {
@@ -35,10 +34,8 @@ const AuthorPage = () => {
     loadAuthor();
   }, [id]);
 
-  // Efect pentru a încărca username-ul pentru fiecare întrebare, dacă nu a fost deja extras
   useEffect(() => {
     const fetchUserNames = async () => {
-      // Extragem o listă de userId-uri unice din întrebări
       const ids = [...new Set(questions.map(q => q.userId).filter(Boolean))];
       const newUsernames = {};
       for (const userIdObj of ids) {
@@ -66,7 +63,7 @@ const AuthorPage = () => {
     const token = localStorage.getItem('token');
     try {
       await askQuestion(id, questionText, token);
-      setQuestionText(''); // curățăm doar câmpul de întrebare, nu ascundem formularul
+      setQuestionText('');
       const questionsData = await fetchQuestionsByAuthorId(id);
       setQuestions(questionsData);
       alert('Întrebarea a fost trimisă cu succes!');
@@ -98,6 +95,9 @@ const AuthorPage = () => {
   if (!author)
     return <div className="text-white text-center mt-10">Loading...</div>;
 
+  // Verificăm dacă autorul poate primi întrebări
+  const canAskQuestions = author.isAlive && author.isActive;
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-white">
       <div className="flex items-center gap-6">
@@ -109,6 +109,9 @@ const AuthorPage = () => {
         <div>
           <h1 className="text-4xl font-bold">{author.name}</h1>
           <p className="text-gray-300 mt-2">{author.description || 'No description available.'}</p>
+          {!author.isActive && (
+            <p className="text-red-500 mt-2">Acest utilizator are contul dezactivat.</p>
+          )}
         </div>
       </div>
       <div className="mt-8">
@@ -185,7 +188,7 @@ const AuthorPage = () => {
         ) : (
           <p className="text-gray-400">Nu există întrebări încă.</p>
         )}
-        {isLoggedIn && !isAuthor && (
+        {isLoggedIn && !isAuthor && canAskQuestions && (
           <button
             onClick={() => setShowQuestionForm(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg mt-4"
