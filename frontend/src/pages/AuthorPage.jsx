@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchAuthorById, fetchQuestionsByAuthorId, askQuestion, answerQuestion, fetchUserNameById } from '../utils/api';
+import { fetchAuthorById, fetchQuestionsByAuthorId, askQuestion, answerQuestion, fetchUserNameById, getUserIdByAuthorId } from '../utils/api';
 import blankProfile from '../assets/blankProfile.png';
 import { AuthContext } from '../context/AuthContext';
 
@@ -23,6 +23,9 @@ const AuthorPage = () => {
     const loadAuthor = async () => {
       try {
         const data = await fetchAuthorById(id);
+        const userForAuthor = await getUserIdByAuthorId(id);
+        const isAuthorActive = userForAuthor.isActive;
+        data.author.isActive = isAuthorActive;
         setAuthor(data.author);
         setBooks(data.books);
         const questionsData = await fetchQuestionsByAuthorId(id);

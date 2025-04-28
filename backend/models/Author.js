@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const authorSchema = new mongoose.Schema({
   name: String,
   picture: String,
-  isAlive: Boolean,
+  isAlive: {type: Boolean, default: true},
   genres: [String],
   description: String,
 });

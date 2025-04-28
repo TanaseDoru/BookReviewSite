@@ -32,6 +32,24 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+router.get('/getUserByAuthorId/:authorId/', async (req, res) => {
+  try
+  {
+    const authorId = req.params.authorId;
+    const user = await User.findOne({ authorId: authorId }, { password: 0 }).lean();
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.json(user);
+  }
+  catch (error)
+  {
+    errorHandler(res, error, 'Error fetching user');
+  }
+})
+
 
 
 module.exports = router;

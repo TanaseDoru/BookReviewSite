@@ -163,3 +163,7 @@ export const fetchMyAuthorRequests = (token) =>
 export const updateUserActiveStatus = async (userId, isActive, token) => {
   return apiRequest(`/admin/users/${userId}/isActive`, 'PUT', { isActive }, token);
 };
+
+export const getUserIdByAuthorId = async (authorId) => {
+  return apiRequest(`/users/getUserByAuthorId/${authorId}`);
+};
