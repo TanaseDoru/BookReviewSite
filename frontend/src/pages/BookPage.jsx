@@ -111,7 +111,7 @@ const BookPage = () => {
 
   useEffect(() => {
     loadReviews();
-  }, [bookId, currentPage, user, selectedRating]);
+  }, [bookId, currentPage, user]);
 
   const handleRatingClick = async (rating) => {
     if (!user) {
@@ -285,7 +285,7 @@ const BookPage = () => {
               </Button>
             </a>
             {userBook ? (
-              <div className="mt-4 w-full">
+              <div className="mt-4 w-1/2">
                 <select
                   value={userBook.status}
                   onChange={(e) => handleStatusChange(e.target.value)}
