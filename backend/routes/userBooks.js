@@ -11,14 +11,24 @@ const router = express.Router();
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const userBooks = await UserBook.find({ userId: req.user.userId })
-      .populate('bookId')
+      // first populate the book document
+      .populate({
+        path: 'bookId',
+        // then inside book, populate its authorId
+        populate: {
+          path: 'authorId',
+          select: 'firstName lastName name',  // or whatever fields you need
+        },
+      })
       .sort({ dateAdded: -1 })
       .lean();
+
     res.json(userBooks);
   } catch (error) {
     errorHandler(res, error, 'Error fetching user books');
   }
 });
+
 
 // Add a book to user’s list
 router.post('/add', authMiddleware, async (req, res) => {

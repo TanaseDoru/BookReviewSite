@@ -14,7 +14,12 @@ const Login = () => {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const navigate = useNavigate();
-  const { setUser } = useContext(AuthContext);
+  const { user, setUser } = useContext(AuthContext);
+
+  if (user) {
+    navigate('/');
+    return null;
+  }
 
   const validateInputs = () => {
     let isValid = true;

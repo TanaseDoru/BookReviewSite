@@ -172,6 +172,32 @@ router.post("/like/:reviewId", auth, async (req, res) => {
   }
 });
 
+router.delete("/book/:bookId", auth, async (req, res) => {
+  try {
+    const { bookId } = req.params;
+    const userId = req.user.userId;
+
+    // Validate bookId
+    if (!mongoose.Types.ObjectId.isValid(bookId)) {
+      return res.status(400).json({ message: "Invalid book ID" });
+    }
+
+    // Find and delete the review
+    const review = await Review.findOneAndDelete({ bookId, userId });
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+
+    // Update the book's avgRating
+    await updateBookAvgRating(bookId);
+
+    res.json({ message: "Review deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting review:", err.message, err.stack);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Create or update a review for a book
 router.post("/book/:bookId", auth, async (req, res) => {
   try {
@@ -185,8 +211,8 @@ router.post("/book/:bookId", auth, async (req, res) => {
     }
 
     // Validate rating
-    if (!rating || rating < 1 || rating > 5) {
-      return res.status(400).json({ message: "Rating must be between 1 and 5" });
+    if (!rating) {
+      
     }
 
     // Check if the book exists

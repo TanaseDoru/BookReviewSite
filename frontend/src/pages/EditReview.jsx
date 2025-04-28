@@ -11,8 +11,6 @@ const EditReview = () => {
     rating: '',
     description: '',
     isSpoiler: false,
-    startDate: '',
-    endDate: '',
   });
   const [book, setBook] = useState(null);
   const [error, setError] = useState('');
@@ -41,12 +39,6 @@ const EditReview = () => {
             rating: existingReview.rating || '',
             description: initialDescription,
             isSpoiler: existingReview.isSpoiler || false,
-            startDate: existingReview.startDate
-              ? new Date(existingReview.startDate).toISOString().split('T')[0]
-              : '',
-            endDate: existingReview.endDate
-              ? new Date(existingReview.endDate).toISOString().split('T')[0]
-              : '',
           });
           setCharCount(calculateCharCount(initialDescription));
         }
@@ -93,8 +85,6 @@ const EditReview = () => {
         rating: parseInt(review.rating),
         description: review.description,
         isSpoiler: review.isSpoiler,
-        startDate: review.startDate || null,
-        endDate: review.endDate || null,
       };
       await saveReview(bookId, reviewData, token);
       navigate('/myBooks');
@@ -272,28 +262,7 @@ const EditReview = () => {
                   Conține spoilere
                 </label>
               </div>
-              <div>
-                <label className="block mb-1 text-white font-semibold">
-                  Data Început Citire (opțional):
-                </label>
-                <input
-                  type="date"
-                  value={review.startDate}
-                  onChange={(e) => setReview({ ...review, startDate: e.target.value })}
-                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-white font-semibold">
-                  Data Terminat Citire (opțional):
-                </label>
-                <input
-                  type="date"
-                  value={review.endDate}
-                  onChange={(e) => setReview({ ...review, endDate: e.target.value })}
-                  className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-                />
-              </div>
+              
             </motion.div>
             <motion.div className="flex gap-4 mt-6" variants={itemVariants}>
               <Button

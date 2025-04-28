@@ -7,8 +7,6 @@ const reviewSchema = new mongoose.Schema({
   rating: { type: Number, min: 1, max: 5, required: true },
   description: { type: String, default: "" },
   isSpoiler: { type: Boolean, default: false },
-  startDate: { type: Date, default: null },
-  endDate: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Array of user IDs who liked the review

@@ -2,17 +2,25 @@
 const API_BASE_URL = "http://localhost:3000/api";
 
 const apiRequest = async (endpoint, method = "GET", body = null, token = null) => {
-  const headers = {
-    "Content-Type": "application/json",
-  };
+  const headers = {};
   if (token) {
     headers.Authorization = `Bearer ${token}`;
+  }
+  // only set JSON content-type if we're *not* sending FormData
+  const isFormData = body instanceof FormData;
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
   }
 
   const config = {
     method,
     headers,
-    body: body ? JSON.stringify(body) : null,
+    // if FormData, pass it straight; otherwise JSON.stringify
+    body: body
+      ? isFormData
+        ? body
+        : JSON.stringify(body)
+      : null,
   };
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
@@ -72,9 +80,10 @@ export const updateProfilePassword = (currentPassword, newPassword, token) =>
 
 export const uploadProfilePicture = (file, token) => {
   const formData = new FormData();
-  formData.append('profilePicture', file);
-  return apiRequest('/profile/upload-picture', 'POST', formData, token);
+  formData.append("profilePicture", file);
+  return apiRequest("/profile/upload-picture", "POST", formData, token);
 };
+
 
 export const fetchUserReviewForBook = (bookId, token) =>
   apiRequest(`/reviews/user/book/${bookId}`, "GET", null, token);
@@ -183,3 +192,7 @@ export const approveBookRequest = (id, token) =>
 
 export const rejectBookRequest = (id, token) =>
   apiRequest(`/book-requests/${id}/reject`, 'PUT', null, token);
+
+// in src/utils/api.js
+export const deleteReview = (bookId, token) =>
+  apiRequest(`/reviews/book/${bookId}`, 'DELETE', null, token);

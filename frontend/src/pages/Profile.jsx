@@ -1,14 +1,19 @@
 import { useState, useContext, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { updateAuthorName, updateProfileName, updateProfilePassword, uploadProfilePicture, createAuthorRequest, checkAuthorRequest, fetchMyAuthorRequests, addAuthor, updateAuthorPicture } from '../utils/api';
 import Button from '../components/shared/Button';
 import blankProfile from '../assets/blankProfile.png';
 import { AuthContext } from '../context/AuthContext';
-import { Navigate } from 'react-router-dom';
 
 const Profile = () => {
   const { user, setUser } = useContext(AuthContext);
+
+  // Redirect to login immediately if no user
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
   const [activeTab, setActiveTab] = useState('profile');
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -20,55 +25,38 @@ const Profile = () => {
   const [authorRequestReason, setAuthorRequestReason] = useState('');
   const [requestStatus, setRequestStatus] = useState('');
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
   useEffect(() => {
     if (activeTab === 'extra' && user.role !== 'author') {
       const checkPending = async () => {
         try {
-          if(requestStatus === '')
-          {
+          if (!requestStatus) {
             const token = localStorage.getItem('token');
-            const notification  = await checkAuthorRequest(token);
-            if(notification.hasRequest === false)
-            {
-              setRequestStatus('');
-            }
-            else
-            {
-              setRequestStatus(notification.status);
-
-            }
+            const resp = await checkAuthorRequest(token);
+            setRequestStatus(resp.hasRequest ? resp.status : '');
           }
-        } catch (error) {
-          console.error('Error checking author request:', error);
+        } catch (err) {
+          console.error('Error checking author request:', err);
           setNotification('Eroare la verificarea cererii de autor.');
         }
       };
       checkPending();
     }
-  }, [activeTab, requestStatus, user]);
-
-  
-  
+  }, [activeTab, requestStatus, user.role]);
 
   const handleProfilePictureUpload = async (e) => {
     const file = e.target.files[0];
+    
     if (!file) return;
-
     try {
       const token = localStorage.getItem('token');
       const data = await uploadProfilePicture(file, token);
-      const updatedUser = { ...user, profilePicture: `data:image/png;base64,${data.profilePicture}` };
-      setUser(updatedUser);
-
+      const pictureData = `${data.profilePicture}`;
+      setUser({ ...user, profilePicture: pictureData });
       if (user.role === 'author') {
         await updateAuthorPicture(user.authorId, data.profilePicture, token);
       }
-    } catch (error) {
-      console.error('Error uploading profile picture:', error);
+    } catch (err) {
+      console.error('Error uploading profile picture:', err);
       alert('Failed to upload profile picture. Please try again.');
     }
   };
@@ -77,15 +65,12 @@ const Profile = () => {
     try {
       const token = localStorage.getItem('token');
       await updateProfileName(user.firstName, user.lastName, token);
-
       if (user.role === 'author') {
         await updateAuthorName(user.authorId, `${user.firstName} ${user.lastName}`, token);
       }
-
       alert('Profile updated successfully!');
-      window.location.reload();
-    } catch (error) {
-      console.error('Error updating name:', error);
+    } catch (err) {
+      console.error('Error updating name:', err);
       alert('Failed to update profile.');
     }
   };
@@ -95,7 +80,6 @@ const Profile = () => {
       setError('New passwords do not match.');
       return;
     }
-
     try {
       const token = localStorage.getItem('token');
       await updateProfilePassword(currentPassword, newPassword, token);
@@ -105,9 +89,9 @@ const Profile = () => {
       setNewPassword('');
       setConfirmPassword('');
       setError('');
-    } catch (error) {
-      console.error('Error updating password:', error);
-      setError(error.message || 'Failed to update password.');
+    } catch (err) {
+      console.error('Error updating password:', err);
+      setError(err.message || 'Failed to update password.');
     }
   };
 
@@ -116,22 +100,21 @@ const Profile = () => {
       setNotification('Te rugăm să introduci un motiv pentru cererea ta.');
       return;
     }
-  
     try {
       const token = localStorage.getItem('token');
       await createAuthorRequest(user._id, authorRequestReason, token);
       setNotification('Cererea ta a fost trimisă cu succes! Vei fi notificat când va fi procesată.');
       setAuthorRequestReason('');
-      setRequestStatus('pending'); 
-    } catch (error) {
-      console.error('Error sending author request:', error);
-      setNotification('Eroare la trimiterea cererii. Te rugăm să încerci din nou. ' + error.message);
+      setRequestStatus('pending');
+    } catch (err) {
+      console.error('Error sending author request:', err);
+      setNotification('Eroare la trimiterea cererii. ' + err.message);
     }
   };
 
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
   };
 
   return (

@@ -1,8 +1,8 @@
 // src/pages/MyBooks.jsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { fetchUserBooks, updateUserBook, fetchUserReviewForBook, saveReview } from "../utils/api";
+import { fetchUserBooks, updateUserBook, fetchUserReviewForBook, deleteReview, saveReview } from "../utils/api";
 import Button from "../components/shared/Button";
 
 const MyBooks = () => {
@@ -14,62 +14,66 @@ const MyBooks = () => {
   const [reviews, setReviews] = useState({});
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchBooksAndReviews = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/login");
-        return;
-      }
+  // Load books and reviews in one function
+  const loadBooksAndReviews = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+    try {
+      // Fetch user books
+      const books = await fetchUserBooks(token);
+      setUserBooks(books);
+      setFilteredBooks(books);
 
-      try {
-        const books = await fetchUserBooks(token);
-        setUserBooks(books);
-        setFilteredBooks(books);
-
-        const reviewPromises = books.map(async (book) => {
-          try {
-            const review = await fetchUserReviewForBook(book.bookId._id, token);
-            const hasReview = !!(review && (review.rating || (review.description && review.description.trim() !== "")));
-            return { bookId: book.bookId._id, hasReview, rating: review?.rating || null };
-          } catch (err) {
-            return { bookId: book.bookId._id, hasReview: false, rating: null };
-          }
-        });
-        const reviewResults = await Promise.all(reviewPromises);
-        const reviewsMap = reviewResults.reduce(
-          (acc, { bookId, hasReview, rating }) => {
-            acc[bookId] = { hasReview, rating };
-            return acc;
-          },
-          {}
-        );
-        setReviews(reviewsMap);
-      } catch (error) {
-        console.error("Error fetching user books:", error);
-        if (error.message.includes("401")) {
-          alert("Sesiunea a expirat! Te rugăm să te autentifici din nou.");
-          localStorage.removeItem("token");
-          navigate("/login");
-        } else {
-          alert("A apărut o eroare la încărcarea cărților. Verifică conexiunea!");
+      // Fetch reviews
+      const reviewPromises = books.map(async (book) => {
+        try {
+          const review = await fetchUserReviewForBook(book.bookId._id, token);
+          const hasReview = !!(
+            review && (review.rating || (review.description && review.description.trim() !== ""))
+          );
+          return { bookId: book.bookId._id, hasReview, rating: review?.rating || null };
+        } catch {
+          return { bookId: book.bookId._id, hasReview: false, rating: null };
         }
+      });
+      const results = await Promise.all(reviewPromises);
+      const map = results.reduce((acc, { bookId, hasReview, rating }) => {
+        acc[bookId] = { hasReview, rating };
+        return acc;
+      }, {});
+      setReviews(map);
+    } catch (error) {
+      console.error("Error loading books and reviews:", error);
+      if (error.message.includes("401")) {
+        alert("Sesiunea a expirat! Te rugăm să te autentifici din nou.");
+        localStorage.removeItem("token");
+        navigate("/login");
+      } else {
+        alert("A apărut o eroare la încărcarea cărților. Verifică conexiunea!");
       }
-    };
-    fetchBooksAndReviews();
+    }
   }, [navigate]);
 
+  // On mount
+  useEffect(() => {
+    loadBooksAndReviews();
+  }, [loadBooksAndReviews]);
+
+  // Filter when activeTab changes
   useEffect(() => {
     let booksToFilter = [...userBooks];
     if (activeTab !== "all") {
-      booksToFilter = booksToFilter.filter((book) => book.status === activeTab);
+      booksToFilter = booksToFilter.filter((b) => b.status === activeTab);
     }
     setFilteredBooks(booksToFilter);
   }, [activeTab, userBooks]);
 
   const handleSort = (field) => {
     if (sortBy === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+      setSortOrder((o) => (o === "asc" ? "desc" : "asc"));
     } else {
       setSortBy(field);
       setSortOrder("asc");
@@ -79,18 +83,20 @@ const MyBooks = () => {
   const sortedBooks = [...filteredBooks].sort((a, b) => {
     let valA = a[sortBy];
     let valB = b[sortBy];
-
     if (sortBy === "dateAdded" || sortBy === "dateRead") {
       valA = new Date(valA);
       valB = new Date(valB);
-    } else if (sortBy === "title" || sortBy === "author") {
+    } else if (sortBy === "title") {
       valA = a.bookId[sortBy]?.toLowerCase() || "";
       valB = b.bookId[sortBy]?.toLowerCase() || "";
     } else if (sortBy === "avgRating" || sortBy === "rating") {
       valA = valA || 0;
       valB = valB || 0;
     }
-
+    else if (sortBy === "author") {
+      valA = a.bookId.authorId.name.toLowerCase();
+      valB = b.bookId.authorId.name.toLowerCase();
+    }
     if (sortOrder === "asc") return valA > valB ? 1 : -1;
     return valA < valB ? 1 : -1;
   });
@@ -99,11 +105,8 @@ const MyBooks = () => {
     try {
       const token = localStorage.getItem("token");
       await updateUserBook(bookId, { status: newStatus }, token);
-      setUserBooks(
-        userBooks.map((book) =>
-          book.bookId._id === bookId ? { ...book, status: newStatus } : book
-        )
-      );
+      // reload all to include updated dateRead
+      await loadBooksAndReviews();
     } catch (error) {
       console.error("Error updating status:", error);
       alert("A apărut o eroare la actualizarea statusului!");
@@ -111,40 +114,39 @@ const MyBooks = () => {
   };
 
   const handleRatingChange = async (bookId, newRating) => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/login");
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    // If they selected the “-” option, confirm deletion
+    if (newRating === "") {
+      const ok = window.confirm("Sigur dorești să ștergi recenzia?");
+      if (!ok) {
+        // revert UI back to existing rating
+        await loadBooksAndReviews();
         return;
       }
-
-      const reviewData = {
-        rating: newRating,
-        description: "",
-        isSpoiler: false,
-      };
-      await saveReview(bookId, reviewData, token);
-      await updateUserBook(bookId, { rating: newRating }, token);
-
-      setReviews((prev) => ({
-        ...prev,
-        [bookId]: { hasReview: true, rating: newRating },
-      }));
-
-      setUserBooks(
-        userBooks.map((book) =>
-          book.bookId._id === bookId ? { ...book, rating: newRating } : book
-        )
-      );
-    } catch (error) {
-      console.error("Error updating rating:", error);
-      if (error.status === 401) {
-        alert("Sesiunea a expirat! Te rugăm să te autentifici din nou.");
-        localStorage.removeItem("token");
-        navigate("/login");
-      } else {
-        alert("A apărut o eroare la actualizarea ratingului!");
+      try {
+        await deleteReview(bookId, token);
+        // refresh both books & reviews
+        await loadBooksAndReviews();
+      } catch (err) {
+        console.error("Error deleting review:", err);
+        alert("A apărut o eroare la ștergerea recenziei!");
       }
+      return;
+    }
+
+    // Otherwise proceed with create/update
+    try {
+      await saveReview(bookId, { rating: newRating, description: "", isSpoiler: false }, token);
+      await updateUserBook(bookId, { rating: newRating }, token);
+      await loadBooksAndReviews();
+    } catch (err) {
+      console.error("Error updating rating:", err);
+      alert("A apărut o eroare la actualizarea ratingului!");
     }
   };
 
@@ -219,9 +221,6 @@ const MyBooks = () => {
               <th className="p-4 cursor-pointer" onClick={() => handleSort("author")}>
                 Autor {sortBy === "author" && (sortOrder === "asc" ? "↑" : "↓")}
               </th>
-              <th className="p-4 cursor-pointer" onClick={() => handleSort("avgRating")}>
-                Recenzie {sortBy === "avgRating" && (sortOrder === "asc" ? "↑" : "↓")}
-              </th>
               <th className="p-4">Recenzia mea</th>
               <th className="p-4">Stare</th>
               <th className="p-4 cursor-pointer" onClick={() => handleSort("dateAdded")}>
@@ -257,18 +256,18 @@ const MyBooks = () => {
                     {book.bookId.title}
                   </Link>
                 </td>
-                <td className="p-4">{book.bookId.author}</td>
-                <td className="p-4">{book.bookId.avgRating.toFixed(2) || "—"}</td>
-                <td className="p-4 flex gap-2 items-center">
+                <td className="p-4">{book.bookId.authorId.name}</td>
+                <td className="p-4">
+                <div className="flex items-center space-x-4">
                   <Button
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg"
                     onClick={() => navigate(`/editReview/${book.bookId._id}`)}
                   >
-                    {reviews[book.bookId._id]?.hasReview ? "Modifica Recenzia" : "Scrie o Recenzie"}
+                    {reviews[book.bookId._id]?.hasReview ? "Modifică Recenzia" : "Scrie o Recenzie"}
                   </Button>
                   <select
                     value={reviews[book.bookId._id]?.rating || ""}
-                    onChange={(e) => handleRatingChange(book.bookId._id, parseInt(e.target.value))}
+                    onChange={(e) => handleRatingChange(book.bookId._id, e.target.value)}
                     className="p-2 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">-</option>
@@ -278,7 +277,9 @@ const MyBooks = () => {
                       </option>
                     ))}
                   </select>
-                </td>
+                </div>
+              </td>
+
                 <td className="p-4">
                   <select
                     value={book.status}

@@ -63,7 +63,7 @@ router.put('/update-name', authMiddleware, async (req, res) => {
     );
 
     if (result.modifiedCount === 0) {
-      return res.status(404).json({ message: 'User not found or no changes made' });
+      return res.json({ message: 'No changes made' });
     }
 
     res.json({ message: 'Profile updated successfully' });

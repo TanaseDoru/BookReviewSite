@@ -133,6 +133,7 @@ const AdminPage = () => {
 
       fetchBookRequests(token)
         .then(async (data) => {
+          data = data.filter((r) => r.status === 'pending');
           setBookRequests(data);
 
           // Preia numele autorilor
@@ -179,7 +180,6 @@ const AdminPage = () => {
       const newStatus = !currentStatus; // Inversează starea curentă
       await updateUserActiveStatus(userId, newStatus, token); // Funcție nouă din api.js
       setUsers(users.map((u) => (u._id === userId ? { ...u, isActive: newStatus } : u)));
-      alert(`Utilizatorul a fost ${newStatus ? 'activat' : 'dezactivat'} cu succes!`);
     } catch (error) {
       console.error('Eroare la actualizarea stării utilizatorului:', error);
       alert('Eroare la actualizarea stării utilizatorului.');
@@ -329,7 +329,6 @@ const AdminPage = () => {
       };
 
       await addBook(bookData, token);
-      alert('Carte adăugată cu succes!');
       setBookForm({
         title: '',
         author: '',
@@ -408,7 +407,6 @@ const AdminPage = () => {
       };
 
       await updateBook(selectedBook._id, updatedData, token);
-      alert('Carte actualizată cu succes!');
       setSelectedBook(null);
       setEditBookForm({
         title: '',
@@ -459,7 +457,6 @@ const AdminPage = () => {
         const token = localStorage.getItem('token');
         updateUserActiveStatus(userId, false, token);
         setUsers(users.filter((u) => u._id !== userId));
-        alert('Utilizator șters cu succes!');
       } catch (error) {
         console.error('Eroare la ștergerea utilizatorului:', error);
         alert('Eroare la ștergerea utilizatorului.');
@@ -477,7 +474,6 @@ const AdminPage = () => {
         isAlive: authorForm.isAlive === 'true',
       };
       await addAuthor(authorData, token);
-      alert('Autor adăugat cu succes!');
       setAuthorForm({
         name: '',
         picture: '',
@@ -511,7 +507,6 @@ const AdminPage = () => {
       const token = localStorage.getItem('token');
       await updateUserRole(userId, newRole, token);
       setUsers(users.map((u) => (u._id === userId ? { ...u, role: newRole } : u)));
-      alert('Rol actualizat cu succes!');
     } catch (error) {
       console.error('Eroare la actualizarea rolului:', error);
       alert('Eroare la actualizarea rolului.');
@@ -545,7 +540,6 @@ const AdminPage = () => {
   
       // Eliminăm cererea din listă
       setAuthorRequests(authorRequests.filter((req) => req._id !== requestId));
-      alert('Cerere de autor aprobată!');
     } catch (error) {
       console.error('Eroare la aprobarea cererii:', error);
       alert('Eroare la aprobarea cererii.');
@@ -557,7 +551,6 @@ const AdminPage = () => {
       const token = localStorage.getItem('token');
       await rejectAuthorRequest(requestId, token);
       setAuthorRequests(authorRequests.filter((req) => req._id !== requestId));
-      alert('Cerere de autor respinsă!');
     } catch (error) {
       console.error('Eroare la respingerea cererii:', error);
       alert('Eroare la respingerea cererii.');
