@@ -61,15 +61,6 @@ const Login = () => {
     }
   };
 
-  const handleSendResetEmail = () => {
-    if (!resetEmail || !/\S+@\S+\.\S+/.test(resetEmail)) {
-      alert('Introdu un email valid');
-      return;
-    }
-    alert(`Mail trimis (Neimplementat) la ${resetEmail}`);
-    setForgotPassword(false);
-    setResetEmail('');
-  };
 
   // Variante pentru animații
   const containerVariants = {
@@ -144,12 +135,6 @@ const Login = () => {
               <p className="text-red-500 text-sm mt-1">{passwordError}</p>
             )}
           </div>
-          <p
-            className="text-blue-400 text-sm cursor-pointer hover:underline text-right"
-            onClick={() => setForgotPassword(true)}
-          >
-            Am uitat parola?
-          </p>
           <motion.div
             animate={email && password ? { scale: [1, 1.05, 1] } : {}}
             transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 1 }}

@@ -27,14 +27,30 @@ router.post('/register', async (req, res) => {
 
     await newUser.save();
 
-    // Corect: folosim newUser în loc de user
+    console.log('new User', newUser);
+
     const token = jwt.sign(
-      { userId: user._id, firstName: user.firstName, lastName: user.lastName, role: user.role, email: user.email, authorId: user.authorId },
+      { userId: newUser._id, firstName: newUser.firstName, lastName: newUser.lastName, role: newUser.role, email: newUser.email, authorId: newUser.authorId },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
 
-    res.status(201).json({ message: '✅ Account created successfully!', token, firstName: newUser.firstName });
+    
+
+    // Trimite toate datele relevante despre utilizator
+    res.json({
+      message: '✅ Login successful!',
+      token,
+      user: {
+        firstName: newUser.firstName,
+        email: newUser.email,
+        lastName: newUser.lastName,
+        profilePicture: newUser.profilePicture,
+        role: newUser.role,
+        authorId: newUser.authorId
+      }
+    });
+
   } catch (error) {
     errorHandler(res, error, '❌ Error during registration');
   }
@@ -72,6 +88,7 @@ router.post('/login', async (req, res) => {
       token,
       user: {
         firstName: user.firstName,
+        email: user.email,
         lastName: user.lastName,
         profilePicture: user.profilePicture,
         role: user.role,

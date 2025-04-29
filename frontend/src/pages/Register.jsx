@@ -66,16 +66,11 @@ const Register = () => {
     try {
       await register(firstName, lastName, email, password);
       const loginData = await login(email, password);
+      console.log("login data:", loginData);
       localStorage.setItem('token', loginData.token);
 
-      setUser({
-        firstName: loginData.firstName,
-        lastName: loginData.lastName,
-        email: loginData.email,
-        profilePicture: loginData.profilePicture,
-      });
+      setUser(loginData.user);
 
-      alert(`Cont creat cu succes! Bine ai venit, ${loginData.firstName}!`);
       navigate('/');
     } catch (error) {
       setError(error.message || 'Eroare la înregistrare');
