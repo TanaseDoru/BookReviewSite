@@ -9,10 +9,12 @@ import {
   fetchUsers,
   updateUserRole,
   fetchBookRequests,
+  fetchPublishers,
   rejectBookRequest,
   fetchAuthorRequests,
   approveAuthorRequest,
   rejectAuthorRequest,
+  addPublisher,
   approveBookRequest,
   fetchAuthorById,
   fetchAuthorByName,
@@ -72,6 +74,13 @@ const AdminPage = () => {
   const [uploadStatus, setUploadStatus] = useState('');
   const [authorExists, setAuthorExists] = useState(true);
   const [authorChecked, setAuthorChecked] = useState(false);
+  const [publisherForm, setPublisherForm] = useState({
+    name: '',
+    foundedYear: '',
+    description: '',
+  });
+  const [publishers, setPublishers] = useState([]);
+  const [selectedPublisher, setSelectedPublisher] = useState('');
 
   // Tab definitions
   const tabs = [
@@ -81,6 +90,7 @@ const AdminPage = () => {
     { id: 'addAuthor', label: 'Adaugă Autor' },
     { id: 'roles', label: 'Atribuire Roluri' },
     { id: 'notifications', label: 'Notificări' },
+    { id: 'addPublisher', label: 'Adaugă Editură' }, 
   ];
 
   // Load initial data
@@ -97,6 +107,16 @@ const AdminPage = () => {
         setStats(data);
       } catch (error) {
         console.error('Eroare la încărcarea statisticilor:', error);
+      }
+    };
+
+    const loadPublishers = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const data = await fetchPublishers(token); // Funcție nouă definită în api.js
+        setPublishers(data);
+      } catch (error) {
+        console.error('Eroare la încărcarea editurilor:', error);
       }
     };
 
@@ -122,6 +142,7 @@ const AdminPage = () => {
 
     loadStats();
     loadUsers();
+    loadPublishers();
     loadAuthorRequests();
   }, [user, navigate]);
 
@@ -138,7 +159,6 @@ const AdminPage = () => {
 
           // Preia numele autorilor
           const ids = [...new Set(data.map((r) => r.payload.authorId).filter(Boolean))];
-          console.log('Book ids:', ids);
           const names = {};
           for (const id of ids) {
             try {
@@ -246,6 +266,27 @@ const AdminPage = () => {
     }
   };
 
+  const handleAddPublisher = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const { name, foundedYear, description } = publisherForm;
+      const publisherData = { 
+        name, 
+        foundedYear: parseInt(foundedYear), 
+        description 
+      };
+      await addPublisher(publisherData, token); // Funcție nouă definită în api.js
+      setPublisherForm({ name: '', foundedYear: '', description: '' });
+      alert('Editura a fost adăugată cu succes!');
+      const updatedPublishers = await fetchPublishers(token);
+      setPublishers(updatedPublishers);
+    } catch (error) {
+      console.error('Eroare la adăugarea editurii:', error);
+      alert('Eroare la adăugarea editurii.');
+    }
+  };
+
   // Handler pentru încărcarea imaginii cărții în modul de editare
   const handleEditBookImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -298,10 +339,10 @@ const AdminPage = () => {
     try {
       const token = localStorage.getItem('token');
       const { title, author, genres, pages, coverImage, description } = bookForm;
-
+  
       const existingAuthor = await fetchAuthorByName(author, token);
       let authorId;
-
+  
       if (existingAuthor && existingAuthor.author) {
         authorId = existingAuthor.author._id;
       } else {
@@ -318,16 +359,17 @@ const AdminPage = () => {
         const newAuthor = await addAuthor(newAuthorData, token);
         authorId = newAuthor._id;
       }
-
+  
       const bookData = {
         title,
         authorId,
+        edituraId: selectedPublisher, // Adăugat
         genres: genres.split(',').map((genre) => genre.trim()),
         pages: parseInt(pages),
         coverImage,
         description: description || '',
       };
-
+  
       await addBook(bookData, token);
       setBookForm({
         title: '',
@@ -341,6 +383,7 @@ const AdminPage = () => {
       setPreviewImage(null);
       setUploadStatus('');
       setAuthorChecked(false);
+      setSelectedPublisher(''); // Resetăm selecția editurii
     } catch (error) {
       console.error('Eroare la adăugarea cărții:', error);
       alert('Eroare la adăugarea cărții.');
@@ -376,10 +419,10 @@ const AdminPage = () => {
     try {
       const token = localStorage.getItem('token');
       const { title, author, genres, pages, coverImage, description } = editBookForm;
-
+  
       const existingAuthor = await fetchAuthorByName(author, token);
       let authorId;
-
+  
       if (!existingAuthor || !existingAuthor.author) {
         if (
           !window.confirm(
@@ -396,16 +439,17 @@ const AdminPage = () => {
       } else {
         authorId = existingAuthor.author._id;
       }
-
+  
       const updatedData = {
         title,
         authorId,
+        edituraId: selectedPublisher, // Adăugat
         genres: genres.split(',').map((genre) => genre.trim()),
         pages: parseInt(pages),
         coverImage,
         description,
       };
-
+  
       await updateBook(selectedBook._id, updatedData, token);
       setSelectedBook(null);
       setEditBookForm({
@@ -419,6 +463,7 @@ const AdminPage = () => {
       });
       setEditPreviewImage(null);
       setUploadStatus('');
+      setSelectedPublisher(''); // Resetăm selecția editurii
       loadBooks();
     } catch (error) {
       console.error('Eroare la actualizarea cărții:', error);
@@ -429,11 +474,11 @@ const AdminPage = () => {
   const loadBookDetails = async (book) => {
     try {
       const token = localStorage.getItem('token');
-      const bookDetails = await fetchBookById(book._id);
+      const bookDetails = await fetchBookById(book._id, token);
       setSelectedBook(bookDetails);
-
+  
       const imageType = bookDetails.coverImage && bookDetails.coverImage.startsWith('data:') ? 'upload' : 'url';
-
+  
       setEditBookForm({
         title: bookDetails.title,
         author: bookDetails.authorId.name,
@@ -443,24 +488,11 @@ const AdminPage = () => {
         description: bookDetails.description,
         imageType: imageType,
       });
-
+      setSelectedPublisher(bookDetails.edituraId?._id || ''); // Preîncărcăm editura
       setEditPreviewImage(bookDetails.coverImage);
     } catch (error) {
       console.error('Eroare la încărcarea detaliilor cărții:', error);
       alert('Eroare la încărcarea detaliilor cărții.');
-    }
-  };
-
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm('Ești sigur că vrei să ștergi acest utilizator?')) {
-      try {
-        const token = localStorage.getItem('token');
-        updateUserActiveStatus(userId, false, token);
-        setUsers(users.filter((u) => u._id !== userId));
-      } catch (error) {
-        console.error('Eroare la ștergerea utilizatorului:', error);
-        alert('Eroare la ștergerea utilizatorului.');
-      }
     }
   };
 
@@ -822,6 +854,22 @@ const AdminPage = () => {
                 />
               </motion.div>
               <motion.div variants={itemVariants}>
+                <label className="block mb-1">Editură:</label>
+                <select
+                  value={selectedPublisher}
+                  onChange={(e) => setSelectedPublisher(e.target.value)}
+                  className="w-full p-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Selectează editura</option>
+                  {publishers.map((publisher) => (
+                    <option key={publisher._id} value={publisher._id}>
+                      {publisher.name}
+                    </option>
+                  ))}
+                </select>
+              </motion.div>
+              <motion.div variants={itemVariants}>
                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
                   Adaugă Carte
                 </Button>
@@ -964,6 +1012,22 @@ const AdminPage = () => {
                     onChange={(e) => setEditBookForm({ ...editBookForm, description: e.target.value })}
                     className="w-full p-2 rounded bg-gray-700 text-white h-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                </motion.div>
+                <motion.div variants={itemVariants}>
+                  <label className="block mb-1">Editură:</label>
+                  <select
+                    value={selectedPublisher}
+                    onChange={(e) => setSelectedPublisher(e.target.value)}
+                    className="w-full p-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Selectează editura</option>
+                    {publishers.map((publisher) => (
+                      <option key={publisher._id} value={publisher._id}>
+                        {publisher.name}
+                      </option>
+                    ))}
+                  </select>
                 </motion.div>
                 <motion.div className="flex gap-2" variants={itemVariants}>
                   <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
@@ -1251,6 +1315,7 @@ const AdminPage = () => {
                         </div>
                       )}
 
+
                       <div className="mt-4 flex gap-2">
                         <Button
                           onClick={() => handleApproveBookRequest(req._id)}
@@ -1270,6 +1335,53 @@ const AdminPage = () => {
                 </div>
               )}
             </div>
+          </motion.section>
+        )}
+
+        { /* Add Publisher Tab */}
+        {activeTab === 'addPublisher' && (
+          <motion.section
+            className="mb-12 bg-gray-800 rounded-xl shadow-lg p-6"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <h2 className="text-2xl font-semibold mb-4">Adaugă Editură</h2>
+            <form onSubmit={handleAddPublisher} className="space-y-4">
+              <motion.div variants={itemVariants}>
+                <label className="block mb-1">Nume:</label>
+                <input
+                  type="text"
+                  value={publisherForm.name}
+                  onChange={(e) => setPublisherForm({ ...publisherForm, name: e.target.value })}
+                  className="w-full p-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </motion.div>
+              <motion.div variants={itemVariants}>
+                <label className="block mb-1">An înființare:</label>
+                <input
+                  type="number"
+                  value={publisherForm.foundedYear}
+                  onChange={(e) => setPublisherForm({ ...publisherForm, foundedYear: e.target.value })}
+                  className="w-full p-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </motion.div>
+              <motion.div variants={itemVariants}>
+                <label className="block mb-1">Descriere:</label>
+                <textarea
+                  value={publisherForm.description}
+                  onChange={(e) => setPublisherForm({ ...publisherForm, description: e.target.value })}
+                  className="w-full p-2 rounded bg-gray-700 text-white h-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </motion.div>
+              <motion.div variants={itemVariants}>
+                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                  Adaugă Editură
+                </Button>
+              </motion.div>
+            </form>
           </motion.section>
         )}
 

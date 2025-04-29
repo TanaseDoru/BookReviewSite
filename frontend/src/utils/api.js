@@ -193,6 +193,21 @@ export const approveBookRequest = (id, token) =>
 export const rejectBookRequest = (id, token) =>
   apiRequest(`/book-requests/${id}/reject`, 'PUT', null, token);
 
-// in src/utils/api.js
 export const deleteReview = (bookId, token) =>
   apiRequest(`/reviews/book/${bookId}`, 'DELETE', null, token);
+
+export const fetchPublishers = (token) => {
+  return apiRequest('/publishers', 'GET', null, token);
+};
+
+export const addPublisher = (publisherData, token) => 
+  apiRequest('/publishers', 'POST', { publisherData }, token);
+
+export const fetchPublisherById = (id) =>
+  apiRequest(`/publishers/${id}`);
+
+export const fetchBooksByPublisher = (id) =>
+  apiRequest(`/publishers/${id}/books`);
+
+export const removeUserBook = (bookId, token) =>
+  apiRequest(`/user-books/${bookId}`, 'DELETE', null, token);

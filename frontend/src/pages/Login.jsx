@@ -50,7 +50,6 @@ const Login = () => {
       const data = await login(email, password);
       localStorage.setItem('token', data.token);
       setUser(data.user);
-      alert(`Bine ai venit, ${data.user.firstName}!`);
       navigate('/');
     } catch (error) {
       // Verificăm mesajul specific pentru cont dezactivat

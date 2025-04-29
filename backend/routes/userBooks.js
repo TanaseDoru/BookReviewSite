@@ -59,6 +59,32 @@ router.post('/add', authMiddleware, async (req, res) => {
   }
 });
 
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ message: 'Invalid book ID' });
+    }
+
+    console.log("Trying to delete bookId: ", id);
+    console.log("User ID: ", req.user.userId);
+
+    const deleted = await UserBook.findOneAndDelete({
+      bookId: id,
+      userId: req.user.userId,
+    });
+
+    if (!deleted) {
+      return res.status(404).json({ message: 'Entry not found' });
+    }
+
+    res.json({ message: 'Cartea a fost eliminată din lista ta' });
+  } catch (error) {
+    errorHandler(res, error, 'Error deleting user book');
+  }
+});
+
 router.patch('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
@@ -120,6 +146,8 @@ router.post('/add', authMiddleware, async (req, res) => {
     errorHandler(res, error, 'Error adding book');
   }
 });
+
+
 
 
 module.exports = router;

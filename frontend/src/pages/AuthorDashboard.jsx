@@ -3,12 +3,11 @@ import { motion } from 'framer-motion';
 import Button from '../components/shared/Button';
 import {
   fetchAuthorById,
-  addBook,
-  updateBook,
   fetchQuestionsByAuthorId,
   answerQuestion,
   createBookRequest,
   fetchUserNameById,
+  fetchPublishers,
 } from '../utils/api';
 import { AuthContext } from '../context/AuthContext';
 
@@ -38,7 +37,18 @@ const AuthorDashboard = () => {
   const [questions, setQuestions] = useState([]);
   const [showAnswerForm, setShowAnswerForm] = useState(null);
   const [answerText, setAnswerText] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Pentru meniu colapsabil pe mobil
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [publishers, setPublishers] = useState([]);
+  const [selectedPublisher, setSelectedPublisher] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const loadPublishers = async () => {
+      const data = await fetchPublishers();
+      setPublishers(data);
+    };
+    loadPublishers();
+  }, []);
 
   useEffect(() => {
     const fetchAuthorData = async () => {
@@ -47,7 +57,9 @@ const AuthorDashboard = () => {
         setBooks(data.books || []);
         setStats({
           totalBooks: data.books.length,
-          avgRating: data.books.reduce((sum, book) => sum + book.avgRating, 0) / (data.books.length || 1),
+          avgRating:
+            data.books.reduce((sum, book) => sum + book.avgRating, 0) /
+            (data.books.length || 1),
         });
         const questionsData = await fetchQuestionsByAuthorId(user.authorId);
         setQuestions(questionsData);
@@ -60,7 +72,14 @@ const AuthorDashboard = () => {
 
   useEffect(() => {
     const fetchUserNames = async () => {
-      const ids = [...new Set(questions.map((q) => q.userId).filter((q) => !q.answerText).filter(Boolean))];
+      const ids = [
+        ...new Set(
+          questions
+            .map((q) => q.userId)
+            .filter((q) => !q.answerText)
+            .filter(Boolean)
+        ),
+      ];
       const newUsernames = {};
       for (const userIdObj of ids) {
         try {
@@ -68,7 +87,11 @@ const AuthorDashboard = () => {
           const data = await fetchUserNameById(userId);
           newUsernames[userId] = data.firstName + ' ' + data.lastName;
         } catch (error) {
-          console.error('Eroare la încărcarea numelui utilizatorului pentru userId', userIdObj._id, error);
+          console.error(
+            'Eroare la încărcarea numelui utilizatorului pentru userId',
+            userIdObj._id,
+            error
+          );
           newUsernames[userIdObj._id] = 'Utilizator necunoscut';
         }
       }
@@ -80,15 +103,27 @@ const AuthorDashboard = () => {
   }, [questions]);
 
   const handleAddBook = async () => {
+    // validare obligatorie
+    if (
+      !newBook.title.trim() ||
+      !newBook.genres.trim() ||
+      !newBook.pages ||
+      !newBook.coverImage.trim() ||
+      !selectedPublisher
+    ) {
+      return alert('Toate câmpurile (cu excepția descrierii) sunt obligatorii.');
+    }
     const token = localStorage.getItem('token');
     try {
       const bookToAdd = {
-        ...newBook,
-        authorId: user.authorId,
+        title: newBook.title.trim(),
         genres: newBook.genres.split(',').map((g) => g.trim()),
         pages: parseInt(newBook.pages, 10),
+        description: newBook.description.trim(),
+        coverImage: newBook.coverImage.trim(),
+        authorId: user.authorId,
+        edituraId: selectedPublisher,
       };
-      // trimitem o cerere de creare carte
       await createBookRequest(
         { requestType: 'create', payload: bookToAdd },
         token
@@ -100,7 +135,8 @@ const AuthorDashboard = () => {
         description: '',
         coverImage: '',
       });
-      alert('Cererea de adăugare carte a fost trimisă cu succes!');
+      setSelectedPublisher('');
+      alert('Cererea de adăugare a cărții a fost trimisă cu succes!');
     } catch (error) {
       console.error('Eroare la trimiterea cererii de adăugare:', error);
       alert('Eroare la trimiterea cererii de adăugare a cărții.');
@@ -114,42 +150,45 @@ const AuthorDashboard = () => {
     }));
   };
 
-  const handleEditBookImageUpload = async (bookId, e) => {
-    const file = e.target.files[0];
-    if (file) {
-      try {
-        handleFieldChange(bookId, 'uploadStatus', 'Se procesează imaginea...');
-        const base64 = await optimizeAndConvertToBase64(file, {
-          maxWidth: 200,
-          maxHeight: 300,
-          quality: 0.5,
-          maxSizeKB: 50,
-        });
-        const sizeInKB = Math.round(getBase64Size(base64) / 1024);
-        handleFieldChange(bookId, 'uploadStatus', `Imagine procesată: ${sizeInKB} KB`);
-        handleFieldChange(bookId, 'coverImage', base64);
-        handleFieldChange(bookId, 'editPreviewImage', base64);
-      } catch (error) {
-        console.error('Eroare la procesarea imaginii:', error);
-        handleFieldChange(
-          bookId,
-          'uploadStatus',
-          'Eroare la procesarea imaginii. Încearcă o imagine mai mică sau mai simplă.'
-        );
-      }
-    }
-  };
-
   const handleSubmitBookChanges = async (bookId) => {
-    const token = localStorage.getItem('token');
-    const updatedData = modifiedBooks[bookId];
-    if (!updatedData) {
-      return alert('Nu există modificări de trimis');
+    const mod = modifiedBooks[bookId] || {};
+    const original = books.find((b) => b._id === bookId);
+    if (!original) {
+      return alert('Cartea nu a fost găsită');
     }
+    const payload = {
+      title:
+        mod.title !== undefined ? mod.title.trim() : original.title.trim(),
+      genres:
+        mod.genres !== undefined
+          ? mod.genres.map((g) => g.trim())
+          : original.genres,
+      pages: mod.pages !== undefined ? mod.pages : original.pages,
+      description:
+        mod.description !== undefined
+          ? mod.description.trim()
+          : original.description.trim(),
+      coverImage:
+        mod.coverImage !== undefined
+          ? mod.coverImage.trim()
+          : original.coverImage.trim(),
+      edituraId: selectedPublisher || original.edituraId?._id,
+      authorId: user.authorId,
+    };
+    // validare obligatorie
+    if (
+      !payload.title ||
+      !payload.genres.length ||
+      !payload.pages ||
+      !payload.coverImage ||
+      !payload.edituraId
+    ) {
+      return alert('Toate câmpurile (cu excepția descrierii) sunt obligatorii.');
+    }
+    const token = localStorage.getItem('token');
     try {
-      // trimitem o cerere de modificare carte
       await createBookRequest(
-        { requestType: 'update', bookId, payload: updatedData },
+        { requestType: 'update', bookId, payload },
         token
       );
       setModifiedBooks((prev) => {
@@ -165,13 +204,12 @@ const AuthorDashboard = () => {
   };
 
   const handleAnswerQuestion = async (questionId) => {
-    const token = localStorage.getItem('token');
     if (!answerText.trim()) {
-      alert('Răspunsul nu poate fi gol!');
-      return;
+      return alert('Răspunsul nu poate fi gol!');
     }
+    const token = localStorage.getItem('token');
     try {
-      await answerQuestion(questionId, answerText, token);
+      await answerQuestion(questionId, answerText.trim(), token);
       const questionsData = await fetchQuestionsByAuthorId(user.authorId);
       setQuestions(questionsData);
       setAnswerText('');
@@ -229,7 +267,6 @@ const AuthorDashboard = () => {
         </nav>
       </motion.div>
 
-      {/* Overlay pentru fundal pe mobil când sidebar-ul este deschis */}
       {isSidebarOpen && (
         <motion.div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
@@ -237,13 +274,12 @@ const AuthorDashboard = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
-        ></motion.div>
+        />
       )}
 
-      {/* Buton pentru a deschide meniul pe mobil */}
       <motion.button
         onClick={() => setIsSidebarOpen(true)}
-        className="md:hidden fixed top-74 left-4 z-[60] p-3 bg-blue-600 rounded-lg text-white text-2xl focus:outline-none shadow-lg"
+        className="md:hidden fixed top-20 left-4 z-[60] p-3 bg-blue-600 rounded-lg text-white text-2xl focus:outline-none shadow-lg"
         aria-label="Deschide meniul"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -267,27 +303,35 @@ const AuthorDashboard = () => {
                 type="text"
                 placeholder="Titlu"
                 value={newBook.title}
-                onChange={(e) => setNewBook({ ...newBook, title: e.target.value })}
+                onChange={(e) =>
+                  setNewBook({ ...newBook, title: e.target.value })
+                }
                 className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <input
                 type="text"
                 placeholder="Genuri (separate prin virgulă)"
                 value={newBook.genres}
-                onChange={(e) => setNewBook({ ...newBook, genres: e.target.value })}
+                onChange={(e) =>
+                  setNewBook({ ...newBook, genres: e.target.value })
+                }
                 className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <input
                 type="number"
                 placeholder="Număr pagini"
                 value={newBook.pages}
-                onChange={(e) => setNewBook({ ...newBook, pages: e.target.value })}
+                onChange={(e) =>
+                  setNewBook({ ...newBook, pages: e.target.value })
+                }
                 className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <textarea
-                placeholder="Descriere"
+                placeholder="Descriere (opțional)"
                 value={newBook.description}
-                onChange={(e) => setNewBook({ ...newBook, description: e.target.value })}
+                onChange={(e) =>
+                  setNewBook({ ...newBook, description: e.target.value })
+                }
                 className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows="5"
               />
@@ -295,14 +339,28 @@ const AuthorDashboard = () => {
                 type="text"
                 placeholder="URL imagine copertă"
                 value={newBook.coverImage}
-                onChange={(e) => setNewBook({ ...newBook, coverImage: e.target.value })}
+                onChange={(e) =>
+                  setNewBook({ ...newBook, coverImage: e.target.value })
+                }
                 className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              <select
+                value={selectedPublisher}
+                onChange={(e) => setSelectedPublisher(e.target.value)}
+                className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Selectează publisher</option>
+                {publishers.map((publisher) => (
+                  <option key={publisher._id} value={publisher._id}>
+                    {publisher.name}
+                  </option>
+                ))}
+              </select>
               <Button
                 onClick={handleAddBook}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg w-full md:w-auto"
               >
-                Adaugă cartea
+                Trimite cerere creare
               </Button>
             </div>
           </div>
@@ -311,125 +369,149 @@ const AuthorDashboard = () => {
         {activeTab === 'modifyBook' && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold mb-6">Modificare carte</h2>
-            {books.map((book) => {
-              const mod = modifiedBooks[book._id] || {};
-              const currentImageType = mod.imageType || book.imageType || 'url';
-              const currentCoverImage = mod.coverImage || book.coverImage || '';
-              const currentUploadStatus = mod.uploadStatus || '';
-              const currentEditPreviewImage = mod.editPreviewImage || '';
-              return (
-                <motion.div
-                  key={book._id}
-                  className="bg-gray-800 rounded-xl shadow-lg p-6"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-gray-400 mb-1">Titlu</label>
-                      <input
-                        type="text"
-                        defaultValue={book.title}
-                        onChange={(e) => handleFieldChange(book._id, 'title', e.target.value)}
-                        className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-400 mb-1">Genuri (separate prin virgulă)</label>
-                      <input
-                        type="text"
-                        defaultValue={book.genres.join(', ')}
-                        onChange={(e) =>
-                          handleFieldChange(book._id, 'genres', e.target.value.split(',').map((g) => g.trim()))
-                        }
-                        className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-400 mb-1">Număr pagini</label>
-                      <input
-                        type="number"
-                        defaultValue={book.pages}
-                        onChange={(e) => handleFieldChange(book._id, 'pages', parseInt(e.target.value))}
-                        className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div className="col-span-1 md:col-span-2">
-                      <label className="block text-gray-400 mb-1">Descriere</label>
-                      <textarea
-                        defaultValue={book.description}
-                        onChange={(e) => handleFieldChange(book._id, 'description', e.target.value)}
-                        className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        rows="4"
-                      />
-                    </div>
-                    <div className="col-span-1 md:col-span-2">
-                      <label className="block text-gray-400 mb-1">Imagine copertă</label>
-                      <div className="flex items-center mb-2">
-                        <label className="inline-flex items-center mr-4">
-                          <input
-                            type="radio"
-                            value="url"
-                            checked={currentImageType === 'url'}
-                            onChange={() => handleFieldChange(book._id, 'imageType', 'url')}
-                            className="mr-1"
-                          />
-                          URL
+            <input
+              type="text"
+              placeholder="Caută după titlu..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full md:w-1/2 p-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+            />
+            {books
+              .filter((book) =>
+                book.title.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              .map((book) => {
+                const mod = modifiedBooks[book._id] || {};
+                const currentImageType = mod.imageType || 'url';
+                const currentCoverImage =
+                  mod.coverImage || book.coverImage || '';
+                const currentUploadStatus = mod.uploadStatus || '';
+                const currentEditPreviewImage =
+                  mod.editPreviewImage || '';
+                return (
+                  <motion.div
+                    key={book._id}
+                    className="bg-gray-800 rounded-xl shadow-lg p-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-gray-400 mb-1">
+                          Titlu
                         </label>
-                        <label className="inline-flex items-center">
-                          <input
-                            type="radio"
-                            value="upload"
-                            checked={currentImageType === 'upload'}
-                            onChange={() => handleFieldChange(book._id, 'imageType', 'upload')}
-                            className="mr-1"
-                          />
-                          Încarcă imagine
-                        </label>
+                        <input
+                          type="text"
+                          defaultValue={book.title}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              book._id,
+                              'title',
+                              e.target.value
+                            )
+                          }
+                          className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
                       </div>
-                      {currentImageType === 'url' ? (
+                      <div>
+                        <label className="block text-gray-400 mb-1">
+                          Genuri
+                        </label>
+                        <input
+                          type="text"
+                          defaultValue={book.genres.join(', ')}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              book._id,
+                              'genres',
+                              e.target.value.split(',').map((g) => g.trim())
+                            )
+                          }
+                          className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-400 mb-1">
+                          Pagini
+                        </label>
+                        <input
+                          type="number"
+                          defaultValue={book.pages}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              book._id,
+                              'pages',
+                              parseInt(e.target.value, 10)
+                            )
+                          }
+                          className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="col-span-1 md:col-span-2">
+                        <label className="block text-gray-400 mb-1">
+                          Descriere (opțional)
+                        </label>
+                        <textarea
+                          defaultValue={book.description}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              book._id,
+                              'description',
+                              e.target.value
+                            )
+                          }
+                          className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          rows="4"
+                        />
+                      </div>
+                      <div className="col-span-1 md:col-span-2">
+                        <label className="block text-gray-400 mb-1">
+                          URL copertă
+                        </label>
                         <input
                           type="text"
                           value={currentCoverImage}
-                          onChange={(e) => handleFieldChange(book._id, 'coverImage', e.target.value)}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              book._id,
+                              'coverImage',
+                              e.target.value
+                            )
+                          }
                           className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Introdu URL-ul imaginii"
                         />
-                      ) : (
-                        <div>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleEditBookImageUpload(book._id, e)}
-                            className="w-full p-3 rounded-lg bg-gray-700 text-white"
-                          />
-                          {currentUploadStatus && (
-                            <p className="mt-2 text-sm text-yellow-400">{currentUploadStatus}</p>
-                          )}
-                          {currentEditPreviewImage && (
-                            <div className="mt-4">
-                              <p className="mb-1 text-gray-400">Previzualizare:</p>
-                              <img
-                                src={currentEditPreviewImage}
-                                alt="Previzualizare copertă"
-                                className="max-w-full h-48 rounded-lg object-cover"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      </div>
+                      <div className="col-span-1 md:col-span-2">
+                        <label className="block text-gray-400 mb-1">
+                          Publisher
+                        </label>
+                        <select
+                          value={selectedPublisher}
+                          onChange={(e) =>
+                            setSelectedPublisher(e.target.value)
+                          }
+                          className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Selectează publisher</option>
+                          {publishers.map((pub) => (
+                            <option key={pub._id} value={pub._id}>
+                              {pub.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                  </div>
-                  <Button
-                    onClick={() => handleSubmitBookChanges(book._id)}
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg w-full md:w-auto mt-4"
-                  >
-                    Salvează modificările
-                  </Button>
-                </motion.div>
-              );
-            })}
+                    <Button
+                      onClick={() => handleSubmitBookChanges(book._id)}
+                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg w-full md:w-auto mt-4"
+                    >
+                      Trimite cerere modificare
+                    </Button>
+                  </motion.div>
+                );
+              })}
           </div>
         )}
 
@@ -444,11 +526,15 @@ const AuthorDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 bg-gray-700 rounded-lg">
                 <p className="text-lg font-semibold">Total cărți</p>
-                <p className="text-2xl text-blue-400">{stats.totalBooks}</p>
+                <p className="text-2xl text-blue-400">
+                  {stats.totalBooks}
+                </p>
               </div>
               <div className="p-4 bg-gray-700 rounded-lg">
                 <p className="text-lg font-semibold">Rating mediu</p>
-                <p className="text-2xl text-blue-400">{stats.avgRating.toFixed(2)}</p>
+                <p className="text-2xl text-blue-400">
+                  {stats.avgRating.toFixed(2)}
+                </p>
               </div>
             </div>
           </motion.div>
@@ -464,40 +550,50 @@ const AuthorDashboard = () => {
             <h2 className="text-2xl font-bold mb-6">Notificări</h2>
             {questions.filter((q) => !q.answerText).length > 0 ? (
               <div className="space-y-4">
-                {questions.filter((q) => !q.answerText).map((question) => (
-                  <div key={question._id} className="p-4 bg-gray-700 rounded-lg">
-                    <p className="text-gray-300">
-                      <strong>Întrebare:</strong> {question.questionText}
-                    </p>
-                    <p className="text-gray-400 text-sm">
-                      Întrebat de: {usernames[question.userId._id] || 'Utilizator necunoscut'}
-                    </p>
-                    <p className="text-gray-400 mt-2">Fără răspuns încă.</p>
-                    <Button
-                      onClick={() => setShowAnswerForm(question._id)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg mt-2"
+                {questions
+                  .filter((q) => !q.answerText)
+                  .map((question) => (
+                    <div
+                      key={question._id}
+                      className="p-4 bg-gray-700 rounded-lg"
                     >
-                      Răspunde
-                    </Button>
-                    {showAnswerForm === question._id && (
-                      <div className="mt-4">
-                        <textarea
-                          placeholder="Scrie răspunsul tău aici..."
-                          className="w-full p-3 rounded-lg bg-gray-600 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          rows="4"
-                          value={answerText}
-                          onChange={(e) => setAnswerText(e.target.value)}
-                        />
-                        <Button
-                          onClick={() => handleAnswerQuestion(question._id)}
-                          className="bg-green-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg mt-2"
-                        >
-                          Trimite răspunsul
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      <p className="text-gray-300">
+                        <strong>Întrebare:</strong> {question.questionText}
+                      </p>
+                      <p className="text-gray-400 text-sm">
+                        Întrebat de:{' '}
+                        {usernames[question.userId._id] ||
+                          'Utilizator necunoscut'}
+                      </p>
+                      <Button
+                        onClick={() => setShowAnswerForm(question._id)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg mt-2"
+                      >
+                        Răspunde
+                      </Button>
+                      {showAnswerForm === question._id && (
+                        <div className="mt-4">
+                          <textarea
+                            placeholder="Scrie răspunsul tău aici..."
+                            className="w-full p-3 rounded-lg bg-gray-600 border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            rows="4"
+                            value={answerText}
+                            onChange={(e) =>
+                              setAnswerText(e.target.value)
+                            }
+                          />
+                          <Button
+                            onClick={() =>
+                              handleAnswerQuestion(question._id)
+                            }
+                            className="bg-green-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg mt-2"
+                          >
+                            Trimite răspunsul
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
               </div>
             ) : (
               <p className="text-gray-400">Nu există întrebări noi.</p>

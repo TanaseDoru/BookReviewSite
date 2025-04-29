@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { fetchUserBooks, updateUserBook, fetchUserReviewForBook, deleteReview, saveReview } from "../utils/api";
+import { fetchUserBooks, updateUserBook, fetchUserReviewForBook, deleteReview, saveReview, removeUserBook } from "../utils/api";
 import Button from "../components/shared/Button";
 
 const MyBooks = () => {
@@ -104,6 +104,12 @@ const MyBooks = () => {
   const handleStatusChange = async (bookId, newStatus) => {
     try {
       const token = localStorage.getItem("token");
+      if(newStatus === "Elimina")
+      {
+        await removeUserBook(bookId, token);
+        loadBooksAndReviews();
+        return;
+      }
       await updateUserBook(bookId, { status: newStatus }, token);
       // reload all to include updated dateRead
       await loadBooksAndReviews();
@@ -289,6 +295,7 @@ const MyBooks = () => {
                     <option value="Vreau sa citesc">Vreau sa citesc</option>
                     <option value="Citesc">Citesc</option>
                     <option value="Citit">Citit</option>
+                    <option value="Elimina">Elimina</option>
                   </select>
                 </td>
                 <td className="p-4">{new Date(book.dateAdded).toLocaleDateString()}</td>

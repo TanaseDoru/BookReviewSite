@@ -1,3 +1,4 @@
+const e = require('express');
 const mongoose = require('mongoose');
 
 const bookRequestSchema = new mongoose.Schema({
@@ -23,6 +24,7 @@ const bookRequestSchema = new mongoose.Schema({
     pages:      { type: Number, required: true },
     description:{ type: String },
     coverImage: { type: String },
+    edituraId:  { type: mongoose.Schema.Types.ObjectId, ref: 'Publisher', required: true },
   },
   status: {
     type: String,

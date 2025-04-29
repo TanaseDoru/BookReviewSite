@@ -10,6 +10,7 @@ const router = express.Router();
 router.post('/', auth, async (req, res) => {
   try {
     const { requestType, bookId, payload } = req.body;
+    console.log('Am primit:', req.body);
     const reqDoc = new BookRequest({
       userId: req.user.userId,
       requestType,

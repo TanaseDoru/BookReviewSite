@@ -13,6 +13,8 @@ import EditReview from "../pages/EditReview";
 import AdminPage from '../pages/AdminPage';
 import AuthorDashboard from '../pages/AuthorDashboard'; 
 import Contact from '../pages/Contact';
+import PublisherBooksPage from '../pages/PublisherBooksPage';
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -30,6 +32,7 @@ export const router = createBrowserRouter([
       { path: "/admin", element: <AdminPage /> }, 
       { path: "/authorDashboard", element: <AuthorDashboard /> }, 
       { path: "/contact", element: <Contact /> }, 
+      { path: "/publishers/:publisherId/books", element: <PublisherBooksPage /> },
     ],
   },
 ]);

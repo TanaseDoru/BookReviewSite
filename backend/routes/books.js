@@ -63,7 +63,7 @@ router.get('/:bookId', async (req, res) => {
     if (!mongoose.isValidObjectId(bookId)) {
       return res.status(400).json({ message: 'Invalid book ID' });
     }
-    const book = await Book.findById(bookId).populate('authorId');
+    const book = await Book.findById(bookId).populate('authorId').populate('edituraId');;
     if (!book) {
       return res.status(404).json({ message: 'Book not found' });
     }
@@ -81,7 +81,8 @@ router.put('/:bookId', authMiddleware, isAuthorOrAdmin, async (req, res) => {
       return res.status(400).json({ message: 'Invalid book ID' });
     }
 
-    const { title, genres, pages, coverImage, description } = req.body;
+    console.log('Updated data;', req.body);
+    const { title, genres, pages, coverImage, description, edituraId } = req.body;
 
     // Construiește obiectul cu datele actualizate
     const updatedData = {};
@@ -90,6 +91,7 @@ router.put('/:bookId', authMiddleware, isAuthorOrAdmin, async (req, res) => {
     if (pages) updatedData.pages = parseInt(pages);
     if (coverImage) updatedData.coverImage = coverImage;
     if (description) updatedData.description = description;
+    if (edituraId) updatedData.edituraId = edituraId;
 
     // Actualizează cartea în baza de date
     const updatedBook = await Book.findByIdAndUpdate(bookId, updatedData, { new: true }).populate('authorId');

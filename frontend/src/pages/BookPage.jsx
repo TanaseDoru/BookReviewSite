@@ -7,6 +7,7 @@ import {
   addUserBook,
   fetchUserBooks,
   updateUserBook,
+  removeUserBook,
   fetchBookReviews,
   likeReview,
   fetchUserReviewForBook,
@@ -158,6 +159,12 @@ const BookPage = () => {
     try {
       const token = localStorage.getItem('token');
 
+      if (newStatus === 'Elimina') {
+        await removeUserBook(book._id, token);
+        loadBookAndUserBook();
+        return;
+      }
+
       if (!userBook) {
         const newUserBook = await addUserBook(bookId, newStatus, token);
         setUserBook(newUserBook);
@@ -294,12 +301,13 @@ const BookPage = () => {
                   <option value="Vreau sa citesc">Vreau să citesc</option>
                   <option value="Citesc">Citesc</option>
                   <option value="Citit">Citit</option>
+                  <option value="Elimina">Elimină</option>   {/* ← opțiunea nouă */}
                 </select>
               </div>
             ) : (
               <Button
                 onClick={handleAddToList}
-                className="mt-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg w-full"
+                className="mt-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg w-1/2"
               >
                 Vreau să citesc
               </Button>
@@ -346,6 +354,14 @@ const BookPage = () => {
                   <span>{book.authorId ? book.authorId.name : 'Unknown Author'}</span>
                 )}
               </h2>
+              {book.edituraId && (
+                <button
+                onClick={() => navigate(`/publishers/${book.edituraId._id}/books`)}
+                className="text-blue-400 hover:underline"
+              >
+                {book.edituraId.name}
+              </button>
+              )}
               <p className="mt-4 text-gray-300 whitespace-pre-line">
                 {book.description || 'No description provided.'}
               </p>

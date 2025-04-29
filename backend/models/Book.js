@@ -1,4 +1,3 @@
-// models/Book.js
 const mongoose = require('mongoose');
 
 const bookSchema = new mongoose.Schema({
@@ -6,6 +5,11 @@ const bookSchema = new mongoose.Schema({
   authorId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Author', // Referință la colecția "Author"
+    required: true 
+  },
+  edituraId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Publisher', // Referință la colecția "Publisher"
     required: true 
   },
   avgRating: { type: Number, default: 0, min: 0, max: 5 },
