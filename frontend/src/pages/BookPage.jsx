@@ -114,6 +114,10 @@ const BookPage = () => {
     loadReviews();
   }, [bookId, currentPage, user]);
 
+  useEffect(() => {
+    loadRatingDistribution();
+  }, [userRating]);
+
   const handleRatingClick = async (rating) => {
     if (!user) {
       navigate('/login');
