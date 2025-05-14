@@ -40,6 +40,31 @@ router.get('/name/:name', async (req, res) => {
   }
 });
 
+router.put('/updatePicture/:id', async (req, res) => {
+  try {
+    const authorId = req.params.id;
+    const { picture } = req.body;
+
+    if (!picture) {
+      return res.status(400).json({ message: 'Picture is required' });
+    }
+
+    const updatedAuthor = await Author.findByIdAndUpdate(
+      authorId,
+      { picture },
+      { new: true }
+    );
+
+    if (!updatedAuthor) {
+      return res.status(404).json({ message: 'Author not found' });
+    }
+
+    res.status(200).json({ message: 'Author picture updated successfully', author: updatedAuthor });
+  } catch (error) {
+    errorHandler(res, error, 'Error updating author picture');
+  }
+});
+
 // Adăugăm ruta GET /:id
 router.get('/:id', async (req, res) => {
   try {

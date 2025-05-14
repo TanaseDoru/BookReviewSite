@@ -23,15 +23,24 @@ const AuthorPage = () => {
     const loadAuthor = async () => {
       try {
         const data = await fetchAuthorById(id);
-        const userForAuthor = await getUserIdByAuthorId(id);
-        const isAuthorActive = userForAuthor.isActive;
+        let isAuthorActive = false;
+        try {
+          const userForAuthor = await getUserIdByAuthorId(id);
+          // Verificăm dacă userForAuthor este un obiect valid cu proprietatea isActive
+          isAuthorActive = userForAuthor && typeof userForAuthor === 'object' && 'isActive' in userForAuthor 
+            ? userForAuthor.isActive 
+            : false;
+        } catch (error) {
+          console.error('Eroare la obținerea utilizatorului pentru autor:', error);
+          // isAuthorActive rămâne false în caz de excepție
+        }
         data.author.isActive = isAuthorActive;
         setAuthor(data.author);
         setBooks(data.books);
         const questionsData = await fetchQuestionsByAuthorId(id);
         setQuestions(questionsData);
       } catch (error) {
-        console.error('Error fetching author or questions:', error);
+        console.error('Eroare la încărcarea autorului sau întrebărilor:', error);
       }
     };
     loadAuthor();
@@ -105,7 +114,7 @@ const AuthorPage = () => {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-white">
       <div className="flex items-center gap-6">
         <img
-          src={author.picture || blankProfile}
+          src={author.picture? `data:image/png;base64,${user.profilePicture}` : blankProfile}
           alt={author.name}
           className="w-40 h-40 object-cover rounded-full shadow-lg"
         />
@@ -113,7 +122,7 @@ const AuthorPage = () => {
           <h1 className="text-4xl font-bold">{author.name}</h1>
           <p className="text-gray-300 mt-2">{author.description || 'No description available.'}</p>
           {!author.isActive && (
-            <p className="text-red-500 mt-2">Acest utilizator are contul dezactivat.</p>
+            <p className="text-red-500 mt-2">Acest utilizator are contul dezactivat sau nu are cont.</p>
           )}
         </div>
       </div>

@@ -66,7 +66,7 @@ router.post('/books', async (req, res) => {
       return res.status(403).json({ message: 'Admin or Author role required. Your role is: ' + req.user.role });
     }
 
-    const { title, authorId, genres, pages, coverImage, description } = req.body;
+    const { title, authorId, genres, pages, coverImage, edituraId, description } = req.body;
 
     // Verificăm dacă authorId este valid
     if (!mongoose.isValidObjectId(authorId)) {
@@ -77,6 +77,7 @@ router.post('/books', async (req, res) => {
       title,
       authorId,
       genres,
+      edituraId,
       pages,
       coverImage,
       description,

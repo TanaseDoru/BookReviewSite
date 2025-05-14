@@ -157,7 +157,7 @@ export const answerQuestion = async (questionId, answerText, token) => {
 };
 
 export const updateAuthorPicture = (authorId, picture, token) =>
-  apiRequest(`/authors/${authorId}`, 'PUT', { picture }, token);
+  apiRequest(`/authors/updatePicture/${authorId}`, 'PUT', { picture }, token);
 
 export const createAuthorRequest = (userId, details, token) =>
   apiRequest('/notifications', 'POST', { userId, details }, token);

@@ -1129,15 +1129,6 @@ const AdminPage = () => {
                 )}
               </motion.div>
               <motion.div variants={itemVariants}>
-                <label className="block mb-1">Data nașterii:</label>
-                <input
-                  type="date"
-                  value={authorForm.born}
-                  onChange={(e) => setAuthorForm({ ...authorForm, born: e.target.value })}
-                  className="w-full p-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </motion.div>
-              <motion.div variants={itemVariants}>
                 <label className="block mb-1">În viață:</label>
                 <select
                   value={authorForm.isAlive.toString()}
@@ -1147,16 +1138,6 @@ const AdminPage = () => {
                   <option value="true">Da</option>
                   <option value="false">Nu</option>
                 </select>
-              </motion.div>
-              
-              <motion.div variants={itemVariants}>
-                <label className="block mb-1">Genuri (separate prin virgulă):</label>
-                <input
-                  type="text"
-                  value={authorForm.genres}
-                  onChange={(e) => setAuthorForm({ ...authorForm, genres: e.target.value })}
-                  className="w-full p-2 rounded bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
               </motion.div>
               <motion.div variants={itemVariants}>
                 <label className="block mb-1">Descriere:</label>

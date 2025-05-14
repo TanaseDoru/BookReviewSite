@@ -1,23 +1,18 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import Paginate from '../components/ui/Paginate';
 import { AuthContext } from '../context/AuthContext';
 import { fetchBooks, fetchUserBooks } from '../utils/api';
 import { getImageSource } from '../utils/imageUtils';
 
 const Home = () => {
   const { user } = useContext(AuthContext);
-  const [pageNumber, setPageNumber] = useState(0);
   const [books, setBooks] = useState([]);
   const [likedGenres, setLikedGenres] = useState([]);
   const navigate = useNavigate();
-
   const booksPerPage = 8;
-  const pagesVisited = pageNumber * booksPerPage;
-  const pageCount = Math.ceil(books.length / booksPerPage);
 
-  // Shuffle helper
+  // Shuffle helper function
   const shuffle = (arr) => {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
@@ -29,14 +24,15 @@ const Home = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    setPageNumber(0);
 
-    const loadRandom = async () => {
+    const loadRandom = async (excludeIds = []) => {
       try {
-        const all = await fetchBooks();
-        const picked = shuffle(all).slice(0, booksPerPage);
+        const allBooks = await fetchBooks();
+        const filteredBooks = allBooks.filter(b => !excludeIds.includes(b._id));
+        const shuffled = shuffle(filteredBooks);
+        const picked = shuffled.slice(0, booksPerPage);
         setBooks(picked);
-        setLikedGenres([]);  // clear any genres
+        setLikedGenres([]);
       } catch (err) {
         console.error('Error fetching random books:', err);
       }
@@ -44,23 +40,34 @@ const Home = () => {
 
     const loadByPreference = async () => {
       try {
+        const allBooks = await fetchBooks();
         const userBooks = await fetchUserBooks(token);
-        const genres = Array.from(new Set(
-          userBooks.flatMap((b) => b.bookId.genres || [])
-        ));
+        const userBookIds = userBooks.map(ub => ub.bookId._id);
+        const genres = Array.from(new Set(userBooks.flatMap(ub => ub.bookId.genres || [])));
         setLikedGenres(genres);
+
         if (genres.length === 0) {
-          // no liked genres: fallback to random
-          return loadRandom();
+          await loadRandom(userBookIds);
+          return;
         }
-        const results = await Promise.all(
-          genres.map((g) => fetchBooks({ genre: g, limit: 3 }))
+
+        const preferredBooks = allBooks.filter(b =>
+          !userBookIds.includes(b._id) &&
+          b.genres?.some(g => genres.includes(g))
         );
-        const merged = results.flat();
-        const unique = merged.filter(
-          (b, idx, self) => self.findIndex((x) => x._id === b._id) === idx
-        );
-        setBooks(unique);
+
+        let displayBooks = preferredBooks.slice(0, booksPerPage);
+
+        if (displayBooks.length < booksPerPage) {
+          const remaining = booksPerPage - displayBooks.length;
+          const randomBooks = shuffle(allBooks.filter(b =>
+            !userBookIds.includes(b._id) &&
+            !displayBooks.some(db => db._id === b._id)
+          )).slice(0, remaining);
+          displayBooks = [...displayBooks, ...randomBooks];
+        }
+
+        setBooks(displayBooks);
       } catch (err) {
         console.error('Error fetching personalized books:', err);
       }
@@ -73,41 +80,6 @@ const Home = () => {
     }
   }, [user]);
 
-  const changePage = ({ selected }) => {
-    setPageNumber(selected);
-  };
-
-  const displayBooks = books
-    .slice(pagesVisited, pagesVisited + booksPerPage)
-    .map((book, idx) => (
-      <motion.div
-        key={book._id}
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: idx * 0.1 }}
-        className="bg-gray-800 rounded-xl shadow-lg cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
-        onClick={() => navigate(`/book/${book._id}`)}
-      >
-        <img
-          src={getImageSource(book.coverImage, '/assets/blankProfile.png')}
-          alt={book.title}
-          className="w-full h-100 object-fill rounded-t-xl"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = '/assets/blankProfile.png';
-          }}
-        />
-        <div className="p-4">
-          <h3 className="text-lg font-semibold text-white truncate">{book.title}</h3>
-          <p className="text-gray-400">{book.authorId?.name ?? 'Unknown Author'}</p>
-        </div>
-      </motion.div>
-    ));
-
-  const heading = (!user || likedGenres.length === 0)
-    ? 'Începe citirea'
-    : 'Recomandări de cărți';
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <motion.h2
@@ -116,7 +88,7 @@ const Home = () => {
         transition={{ duration: 0.5 }}
         className="text-3xl font-bold text-white mb-2"
       >
-        {heading}
+        {(!user || likedGenres.length === 0) ? 'Începe citirea' : 'Recomandări de cărți'}
       </motion.h2>
 
       {user && likedGenres.length > 0 && (
@@ -126,12 +98,31 @@ const Home = () => {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {displayBooks}
+        {books.map((book, idx) => (
+          <motion.div
+            key={book._id}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: idx * 0.1 }}
+            className="bg-gray-800 rounded-xl shadow-lg cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+            onClick={() => navigate(`/book/${book._id}`)}
+          >
+            <img
+              src={getImageSource(book.coverImage, '/assets/blankProfile.png')}
+              alt={book.title}
+              className="w-full h-100 object-fill rounded-t-xl"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = '/assets/blankProfile.png';
+              }}
+            />
+            <div className="p-4">
+              <h3 className="text-lg font-semibold text-white truncate">{book.title}</h3>
+              <p className="text-gray-400">{book.authorId?.name ?? 'Unknown Author'}</p>
+            </div>
+          </motion.div>
+        ))}
       </div>
-
-      {books.length > booksPerPage && (
-        <Paginate pageCount={pageCount} onPageChange={changePage} />
-      )}
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { updateAuthorName, updateProfileName, updateProfilePassword, uploadProfilePicture, createAuthorRequest, checkAuthorRequest, fetchMyAuthorRequests, addAuthor, updateAuthorPicture } from '../utils/api';
+import { updateAuthorName, updateProfileName, updateProfilePassword, updateAuthorPicture, uploadProfilePicture, createAuthorRequest, checkAuthorRequest } from '../utils/api';
 import Button from '../components/shared/Button';
 import blankProfile from '../assets/blankProfile.png';
 import { AuthContext } from '../context/AuthContext';
@@ -45,19 +45,19 @@ const Profile = () => {
 
   const handleProfilePictureUpload = async (e) => {
     const file = e.target.files[0];
-    
     if (!file) return;
+  
     try {
       const token = localStorage.getItem('token');
       const data = await uploadProfilePicture(file, token);
-      const pictureData = `${data.profilePicture}`;
-      setUser({ ...user, profilePicture: pictureData });
-      if (user.role === 'author') {
+      setUser({ ...user, profilePicture: data.profilePicture });
+  
+      if (user.role === 'author' && user.authorId) {
         await updateAuthorPicture(user.authorId, data.profilePicture, token);
       }
     } catch (err) {
       console.error('Error uploading profile picture:', err);
-      alert('Failed to upload profile picture. Please try again.');
+      alert(`Failed to upload profile picture: ${err.message}`);
     }
   };
 
